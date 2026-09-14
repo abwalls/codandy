@@ -14,7 +14,8 @@ from app.settings import settings
 def main():
     with tempfile.TemporaryDirectory(prefix="atlas-smoke-") as workspace:
         settings.workspace_root = workspace
-        with TestClient(app) as client:
+        # The API only answers to local host names (DNS-rebinding protection).
+        with TestClient(app, base_url="http://localhost") as client:
             response = client.post("/api/analyses", json={"source": {
                 "url": "https://github.com/microsoft/TypeScript-React-Starter"}})
             response.raise_for_status()

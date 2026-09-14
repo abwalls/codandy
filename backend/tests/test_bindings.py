@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.debugging.bindings import bind_observation, runtime_path
+from app.debugging.bindings import bind_observation, path_hint, runtime_path
 from app.debugging.cases import CaseStore
 from app.debugging.stacks import normalize_stack_text
 from app.models import AtlasDocument, AtlasNode
@@ -78,3 +78,33 @@ def test_bindings_survive_restart_without_mutating_observation(tmp_path):
     assert restored.observation == saved.observation
     assert restored.bindings[0].snapshot_id == snapshot
     assert restored.bindings[0].revision == "mismatch"
+
+
+@pytest.mark.parametrize("path", [
+    "webpack://my-app/./src/App.tsx", "webpack:///./src/App.tsx",
+    "webpack-internal:///./src/App.tsx", "app:///src/App.tsx", "./src/App.tsx",
+])
+def test_bundler_and_rewritten_frame_paths_match_indexed_source(path):
+    binding = bind_observation(observed(path), atlas("src/App.tsx", "src/index.tsx"), uuid4())[0]
+    assert binding.status == "candidate"
+    assert binding.method == "exact_path"
+    assert binding.candidates[0].path == "src/App.tsx"
+    assert binding.candidates[0].line == 4
+
+
+@pytest.mark.parametrize("path", ["../src/App.tsx", "webpack://my-app/../src/App.tsx"])
+def test_paths_with_an_unknown_base_only_offer_suffix_candidates(path):
+    # The base of ../ is unknown, so an identical indexed path is not an exact match.
+    assert runtime_path(path) is None
+    binding = bind_observation(observed(path), atlas("src/App.tsx", "web/src/App.tsx"), uuid4())[0]
+    assert binding.method == "path_suffix"
+    assert binding.status == "ambiguous"
+    assert {candidate.path for candidate in binding.candidates} == {"src/App.tsx", "web/src/App.tsx"}
+    assert any("unknown base" in note for note in binding.limitations)
+
+
+def test_path_hints_mark_unknown_bases_and_reject_unlisted_schemes():
+    assert path_hint("~/src/App.tsx") == ("src/App.tsx", False)
+    assert path_hint("webpack://my-app/./src/App.tsx") == ("src/App.tsx", True)
+    assert path_hint("chrome-extension://abc/src/App.tsx") is None
+    assert path_hint("webpack://my-app/src/../../secret") is None

@@ -19,7 +19,12 @@ export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "project
     if (groups.has(id)) membership.set(node.id, id);
   }
   const links = new Map<string, ArchitectureLink>();
+  // Local imports with no resolved target: real gaps in the drawn graph.
   let unresolved = 0;
+  // Undrawn imports the analyzer did not mark as local: packages, standard library and
+  // namespaces, or every undrawn import from an atlas that predates the classification.
+  let external = 0;
+  const classified = atlas.nodes.some(node => node.kind === "import" && typeof node.attributes.local_import === "boolean");
   const seen = new Set<string>();
   function connect(source: string, target: string, key: string, inferred: boolean, evidence: string[]) {
     const from = membership.get(source), to = membership.get(target);
@@ -41,7 +46,9 @@ export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "project
       resolved.set(edge.source, [...(resolved.get(edge.source) || []), edge]);
     }
     for (const edge of atlas.relationships) if (edge.type === "IMPORTS") {
-      if (!(resolved.get(edge.target) || []).some(target => membership.has(target.target))) unresolved++;
+      if (!(resolved.get(edge.target) || []).some(target => membership.has(target.target))) {
+        if (nodes.get(edge.target)?.attributes.local_import === true) unresolved++; else external++;
+      }
       for (const target of resolved.get(edge.target) || []) connect(edge.source, target.target,
         JSON.stringify([edge.source, edge.target, target.target]), target.resolution === "inferred", [edge.source, edge.target, target.target]);
     }
@@ -51,5 +58,7 @@ export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "project
   return { groups: [...groups.values()].map(group => ({ ...group, nodeIds: group.nodeIds.sort() }))
     .sort((a, b) => (degree.get(b.id) || 0) - (degree.get(a.id) || 0) || a.label.localeCompare(b.label)),
     links: [...links.values()].sort((a, b) => b.count - a.count || a.source.localeCompare(b.source) || a.target.localeCompare(b.target)),
+    classified: mode === "projects" || classified,
+    external: mode === "folders" ? external : 0,
     unresolved: mode === "folders" ? unresolved : atlas.relationships.filter(edge => edge.resolution === "unresolved" && edge.type === "DEPENDS_ON").length };
 }

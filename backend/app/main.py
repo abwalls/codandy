@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.codex_bridge import CodexBridge
 from app.debugging.cases import CaseStore
+from app.hosts import AllowedHosts
 from app.jobs import JobStore
 from app.routers import analyses, assistant, cases, debugging, health
 from app.settings import settings
@@ -38,6 +39,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added last so it runs first: a rebound host name is rejected before CORS or any route.
+app.add_middleware(AllowedHosts, hosts=lambda: settings.allowed_hosts)
 
 app.include_router(health.router)
 app.include_router(debugging.router, prefix="/api")

@@ -12,23 +12,44 @@ from app.debugging.models import (
 )
 from app.models import AtlasDocument
 
+# Bundlers and Sentry's frame rewriting name source files with these schemes.
+URL_SCHEMES = {"http", "https", "file", "webpack", "webpack-internal", "app"}
 
-def runtime_path(value: str | None) -> str | None:
+
+def path_hint(value: str | None) -> tuple[str, bool] | None:
+    """A repository-relative path hint, and whether it is anchored at a known root.
+
+    `./` is relative to the bundle or URL root, the same assumption exact URL paths already
+    make. `../` and `~/` are relative to an unknown base, so they may only suggest
+    candidates by suffix, never an exact path.
+    """
     if not value:
         return None
     path = value.replace("\\", "/")
     if "://" in path:
         try:
             parsed = urlsplit(path)
-            if parsed.scheme not in {"http", "https", "webpack", "file"}:
-                return None
-            path = parsed.path
         except ValueError:
             return None
+        if parsed.scheme not in URL_SCHEMES:
+            return None
+        # URL hosts and webpack namespaces are not repository locations.
+        path = parsed.path
     elif len(path) >= 2 and path[1] == ":":
         path = path[2:]
     path = path.lstrip("/")
-    return path if is_repository_relative(path) else None
+    anchored = True
+    while path.startswith(("./", "../", "~/")):
+        if not path.startswith("./"):
+            anchored = False
+        path = path.split("/", 1)[1]
+    return (path, anchored) if is_repository_relative(path) else None
+
+
+def runtime_path(value: str | None) -> str | None:
+    """An anchored repository-relative path, or None."""
+    hint = path_hint(value)
+    return hint[0] if hint and hint[1] else None
 
 
 def bind_observation(observation: Observation, atlas: AtlasDocument, snapshot_id: UUID,
@@ -44,7 +65,9 @@ def bind_observation(observation: Observation, atlas: AtlasDocument, snapshot_id
     results = []
     for exception in observation.exceptions:
         for frame in exception.frames:
-            paths = {path for value in (frame.path, frame.abs_path) if (path := runtime_path(value))}
+            hints = [hint for value in (frame.path, frame.abs_path) if (hint := path_hint(value))]
+            paths = {path for path, anchored in hints if anchored}
+            suffix_only = {path for path, anchored in hints if not anchored}
             mapped = {path[len(prefix) + 1:] for path in paths
                       if prefix and path.startswith(prefix + "/")}
             exact = sorted((paths | mapped) & files.keys())
@@ -52,7 +75,7 @@ def bind_observation(observation: Observation, atlas: AtlasDocument, snapshot_id
             candidates = exact
             if not candidates:
                 scored = {}
-                for path in paths:
+                for path in paths | suffix_only:
                     parts = path.split("/")
                     for candidate in by_name.get(parts[-1], []):
                         score = 0
@@ -69,6 +92,8 @@ def bind_observation(observation: Observation, atlas: AtlasDocument, snapshot_id
                 limitations.append("Runtime commit was supplied by the user, not verified from provider evidence.")
             if revision == "mismatch":
                 limitations.append("Reported runtime commit differs from the selected snapshot; line numbers may be wrong.")
+            if suffix_only and not paths:
+                limitations.append("The runtime path is relative to an unknown base (../ or ~/), so only suffix candidates are offered.")
             if len(candidates) > 20:
                 # Do not silently promote one candidate after truncating competitors.
                 limitations.append(f"{len(candidates)} competing paths exceed the candidate budget; refine the path mapping.")

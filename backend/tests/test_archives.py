@@ -31,7 +31,8 @@ def build_zip(entries: dict[str, bytes | str]) -> bytes:
 
 
 def workspace_limits(tmp_path, **values) -> Settings:
-    return Settings(workspace_root=str(tmp_path / "workspaces"), **values)
+    # JobStore(workspace_limits(...)) must never load or evict personal reports.
+    return Settings(workspace_root=str(tmp_path / "workspaces"), report_root=None, **values)
 
 
 def leftovers(tmp_path) -> list[str]:

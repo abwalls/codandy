@@ -12,6 +12,117 @@ def analyze(root, **limits):
                               Settings(**limits), lambda *_: None)
 
 
+def write_sources(root, sources):
+    for path, content in sources.items():
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_text(content, encoding="utf-8")
+
+
+def resolved_imports(atlas):
+    by_id = {node.id: node for node in atlas.nodes}
+    return {(by_id[edge.source].path, by_id[edge.source].label, by_id[edge.target].path)
+            for edge in atlas.relationships
+            if edge.type == "RESOLVES_TO" and by_id[edge.source].kind == "import"}
+
+
+def test_tsconfig_path_aliases_resolve_as_data_only(tmp_path):
+    write_sources(tmp_path, {
+        "tsconfig.base.json": '{\n  // Shared aliases\n  "compilerOptions": {\n'
+                              '    "baseUrl": ".",\n'
+                              '    "paths": {"@/*": ["./src/*"], "@config": ["./config/index.ts"],},\n'
+                              '  },\n}\n',
+        "tsconfig.json": '{ "extends": "./tsconfig.base.json", /* inherited */ '
+                         '"compilerOptions": {"strict": true} }',
+        "src/app.ts": 'import { a } from "@/lib/a"; import cfg from "@config"; '
+                      'import { b } from "lib2/b"; import { d } from "@/dup"; '
+                      'import { m } from "@/missing"; import { e } from "@/x/../../../outside"; '
+                      'import React from "react";',
+        "src/lib/a.ts": "export const a = 1;",
+        "src/dup.ts": "export const d = 1;",
+        "src/dup/index.ts": "export const d = 2;",
+        "config/index.ts": "export default {};",
+        "lib2/b.ts": "export const b = 2;",
+        "packages/web/tsconfig.json": '{"compilerOptions": {"paths": {"@/*": ["./app/*"]}}}',
+        "packages/web/app/page.tsx": 'import { w } from "@/widget";',
+        "packages/web/app/widget.tsx": "export const w = 1;",
+        "packages/loop/tsconfig.json": '{"extends": "./tsconfig.json"}',
+        "packages/loop/index.ts": 'import { c } from "@/cycle";',
+    })
+    atlas = analyze(tmp_path)
+    # Ambiguous (@/dup), missing and repository-escaping targets stay unresolved.
+    assert resolved_imports(atlas) == {
+        ("src/app.ts", "@/lib/a", "src/lib/a.ts"),
+        ("src/app.ts", "@config", "config/index.ts"),
+        ("src/app.ts", "lib2/b", "lib2/b.ts"),
+        ("packages/web/app/page.tsx", "@/widget", "packages/web/app/widget.tsx"),
+    }
+    local = {node.label: node.attributes["local_import"]
+             for node in atlas.nodes if node.kind == "import"}
+    assert local == {"@/lib/a": True, "@config": True, "lib2/b": True, "@/dup": True,
+                     "@/missing": True, "@/x/../../../outside": True, "react": False,
+                     "@/widget": True, "@/cycle": True}
+    assert all(edge.resolution == "inferred"
+               for edge in atlas.relationships if edge.type == "RESOLVES_TO")
+
+
+def test_python_absolute_imports_resolve_from_the_enclosing_project_root(tmp_path):
+    write_sources(tmp_path, {
+        # A same-named root folder (here a Next.js app/) must not capture backend imports.
+        "app/page.tsx": "export default function Page() { return null; }",
+        "backend/pyproject.toml": '[project]\nname = "api"\ndependencies = []\n',
+        "backend/app/__init__.py": "",
+        "backend/app/main.py": "from app.jobs import run\nimport app.models\nimport fastapi\n",
+        "backend/app/jobs.py": "def run():\n    return 1\n",
+        "backend/app/models.py": "VALUE = 1\n",
+        "backend/tests/test_jobs.py": "from app.jobs import run\n",
+        "worker/setup.cfg": "[metadata]\nname = worker\n",
+        "worker/src/tasks/__init__.py": "",
+        "worker/src/tasks/queue.py": "from tasks.util import helper\n",
+        "worker/src/tasks/util.py": "def helper():\n    return 1\n",
+    })
+    atlas = analyze(tmp_path)
+    assert resolved_imports(atlas) == {
+        ("backend/app/main.py", "app.jobs", "backend/app/jobs.py"),
+        ("backend/app/main.py", "app.models", "backend/app/models.py"),
+        ("backend/tests/test_jobs.py", "app.jobs", "backend/app/jobs.py"),
+        ("worker/src/tasks/queue.py", "tasks.util", "worker/src/tasks/util.py"),
+    }
+    fastapi = next(node for node in atlas.nodes
+                   if node.kind == "import" and node.label == "fastapi")
+    assert fastapi.attributes["local_import"] is False
+
+
+def test_imports_are_classified_as_local_or_external(tmp_path):
+    # The Architecture map counts only local imports as unresolved gaps.
+    sources = {
+        "web/app.ts": 'import React from "react"; import { x } from "../lib/core"; '
+                      'import { y } from "./missing"; import { z } from "@/lib/z"; '
+                      'import scoped from "@scope/pkg";',
+        "lib/core.ts": "export const x = 1;",
+        "svc/__init__.py": "",
+        "svc/main.py": "import os\nimport requests\nfrom svc.helper import run\n"
+                       "from svc.gone import thing\nfrom . import sibling\n",
+        "svc/helper.py": "def run():\n    return 1\n",
+        "go.mod": "module example.com/app\n\ngo 1.22\n",
+        "cmd/main.go": 'package main\n\nimport (\n\t"fmt"\n\t"example.com/app/internal/util"\n)\n',
+        "internal/util/util.go": "package util\n",
+        "Api.cs": "using System;\nusing MyApp.Services;\nclass Api {}\n",
+    }
+    for path, content in sources.items():
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_text(content, encoding="utf-8")
+    atlas = analyze(tmp_path)
+    local = {node.label: node.attributes["local_import"]
+             for node in atlas.nodes if node.kind == "import"}
+    assert local == {
+        "react": False, "../lib/core": True, "./missing": True,
+        "@/lib/z": True, "@scope/pkg": False,
+        "os": False, "requests": False, "svc.helper": True, "svc.gone": True, ".": True,
+        "fmt": False, "example.com/app/internal/util": True,
+        "System": False, "MyApp.Services": False,
+    }
+
+
 def test_mixed_repository(tmp_path):
     sources = {
         "package.json": '{"dependencies":{"react":"19","typescript":"5"}}',

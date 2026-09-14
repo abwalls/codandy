@@ -14,3 +14,13 @@ def test_legacy_dotenv_and_new_names(tmp_path):
     settings = Settings(_env_file=env)
     assert settings.codex_enabled
     assert settings.report_root == "new"
+
+
+def test_new_settings_in_tests_cannot_inherit_personal_storage_or_credentials():
+    # conftest.py must cover Settings() instances created inside tests, not only the shared
+    # app settings object; stores built from them would load and evict personal reports.
+    fresh = Settings()
+    assert fresh.report_root is None
+    assert not fresh.sentry_token.get_secret_value()
+    assert not fresh.sentry_organization
+    assert not fresh.codex_enabled

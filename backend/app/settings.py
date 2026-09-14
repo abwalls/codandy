@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # Host names this API answers to. Checking Host stops DNS-rebinding pages from reading
+    # local reports as same-origin; add a name only for a separately secured backend.
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1", "::1"]
     workspace_root: str = ".workspaces"
     # Opt-in local, single-process persistence for completed reports and captured source.
     report_root: str | None = None

@@ -397,18 +397,35 @@ test("uploaded archives display by name and compare only with the same archive n
 });
 
 test("architecture map uses resolved import targets without inventing relationships", () => {
-  const node = (id, kind, path) => ({ id, kind, path, label: id, detail: "", confidence: 80, evidence: [], attributes: {} });
+  const node = (id, kind, path, attributes = {}) => ({ id, kind, path, label: id, detail: "", confidence: 80, evidence: [], attributes });
   const edge = (source, target, type, resolution) => ({ source, target, type, resolution, confidence: 80, evidence: [] });
-  const sample = { nodes: [node("a", "file", "web/app.ts"), node("b", "file", "lib/core.ts"), node("i", "import", "web/app.ts"), node("missing", "import", "web/app.ts")],
-    relationships: [edge("a", "i", "IMPORTS", "unresolved"), edge("i", "b", "RESOLVES_TO", "inferred"), edge("a", "missing", "IMPORTS", "unresolved")] };
-  const graph = architectureMap(sample, "folders");
-  assert.equal(graph.links.length, 1);
-  assert.equal(graph.links[0].source, "web");
-  assert.equal(graph.links[0].target, "lib");
-  assert.equal(graph.links[0].inferred, 1);
-  assert.equal(graph.unresolved, 1);
-  assert.deepEqual(architectureMap({ ...sample, nodes: [...sample.nodes].reverse(), relationships: [...sample.relationships].reverse() }, "folders"), graph);
-  assert.equal(architectureMap(sample, "projects").links.length, 0);
+  // `missing` is the undrawn import's local_import value; undefined models an older atlas.
+  const sample = missing => ({ nodes: [node("a", "file", "web/app.ts"), node("b", "file", "lib/core.ts"),
+    node("i", "import", "web/app.ts", missing === undefined ? {} : { local_import: true }),
+    node("missing", "import", "web/app.ts", missing === undefined ? {} : { local_import: missing })],
+    relationships: [edge("a", "i", "IMPORTS", "unresolved"), edge("i", "b", "RESOLVES_TO", "inferred"), edge("a", "missing", "IMPORTS", "unresolved")] });
+  const legacy = architectureMap(sample(), "folders");
+  assert.equal(legacy.links.length, 1);
+  assert.equal(legacy.links[0].source, "web");
+  assert.equal(legacy.links[0].target, "lib");
+  assert.equal(legacy.links[0].inferred, 1);
+  // Without the analyzer's classification a package cannot be told from a failed local import.
+  assert.deepEqual([legacy.classified, legacy.unresolved, legacy.external], [false, 0, 1]);
+  const legacySample = sample();
+  assert.deepEqual(architectureMap({ ...legacySample, nodes: [...legacySample.nodes].reverse(), relationships: [...legacySample.relationships].reverse() }, "folders"), legacy);
+  const local = architectureMap(sample(true), "folders");
+  assert.deepEqual([local.classified, local.unresolved, local.external], [true, 1, 0]);
+  const external = architectureMap(sample(false), "folders");
+  assert.deepEqual([external.classified, external.unresolved, external.external], [true, 0, 1]);
+  assert.equal(architectureMap(sample(), "projects").links.length, 0);
+});
+
+test("analyzer marks package imports so the architecture map does not call them unresolved", () => {
+  const imported = label => fixture.nodes.find(node => node.kind === "import" && node.label === label);
+  assert.equal(imported("react").attributes.local_import, false);
+  assert.equal(imported("./other").attributes.local_import, true);
+  const graph = architectureMap(fixture, "folders");
+  assert.deepEqual([graph.classified, graph.unresolved, graph.external], [true, 0, 1]);
 });
 
 test("architecture project map shows only actual project references", () => {

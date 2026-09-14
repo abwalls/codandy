@@ -79,6 +79,11 @@ ROUTE_VERBS = {
 DYNAMIC_CODE_APIS = {"TypeScript": {"eval"}, "JavaScript": {"eval"},
                      "Python": {"eval", "exec"}}
 SCRIPT_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+# tsconfig/jsconfig files are read as data for import path aliases; TypeScript never runs.
+TS_CONFIG_NAME = re.compile(r"[tj]sconfig(?:\.[A-Za-z0-9_-]+)*\.json")
+MAX_TS_CONFIG_BYTES = 256_000
+# A directory holding one of these is a root for absolute Python imports.
+PYTHON_PROJECT_FILES = {"pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"}
 # Which manifest kinds may own a source file of each language.
 LANGUAGE_MANIFESTS = {
     "TypeScript": ("package.json",), "JavaScript": ("package.json",),
@@ -90,9 +95,12 @@ BASE_LIMITATIONS = [
     ("Syntax indexing supports C#, TypeScript/TSX, JavaScript/JSX, Python and Go; other files "
      "are inventory only."),
     ("Local imports link to unique source-path candidates only: relative TypeScript/JavaScript "
-     "specifiers, relative and repository-rooted Python modules, and Go package directories "
-     "under the declared module path. Compiler aliases, exports, build tags and package "
-     "resolution are not evaluated. Other imports remain unresolved."),
+     "specifiers and tsconfig/jsconfig paths and baseUrl aliases (relative extends only), "
+     "relative Python modules and absolute modules under the enclosing Python project root "
+     "(including src/) or the repository root, and Go package directories under the declared "
+     "module path. Bundler aliases, package exports/imports fields, project references, build "
+     "tags and installed-package resolution are not evaluated. Other imports remain "
+     "unresolved."),
     ("Routes are inferred literal candidates from minimal-API, Express, Flask/FastAPI decorator "
      "and Go mux/gin registration syntax. Method-agnostic registrations are recorded as ANY "
      "because the verb is not stated in source. Controller prefixes, router mount prefixes, "
@@ -123,6 +131,40 @@ def python_requirements(entries: object) -> list[str]:
         if match:
             names.append(match.group(1))
     return names
+
+
+def jsonc_loads(text: str):
+    """Parse tsconfig-style JSON (comments, trailing commas) as data; nothing is evaluated."""
+    output = []
+    index, length, in_string = 0, len(text), False
+    while index < length:
+        char = text[index]
+        if in_string:
+            if char == "\\":
+                output.append(text[index:index + 2])
+                index += 2
+                continue
+            in_string = char != '"'
+        elif char == '"':
+            in_string = True
+        elif text.startswith("//", index):
+            end = text.find("\n", index)
+            index = length if end < 0 else end
+            continue
+        elif text.startswith("/*", index):
+            end = text.find("*/", index + 2)
+            index = length if end < 0 else end + 2
+            continue
+        elif char in "}]":
+            # Drop a trailing comma before the closing bracket; strings are already copied.
+            position = len(output) - 1
+            while position >= 0 and output[position].isspace():
+                position -= 1
+            if position >= 0 and output[position] == ",":
+                del output[position]
+        output.append(char)
+        index += 1
+    return json.loads("".join(output))
 
 
 def reference_name(references: dict, kind: str, name: str) -> str:
@@ -195,6 +237,8 @@ def analyze_repository(root: Path, url: str, ref: str | None, limits: Settings,
         return parser_cache[suffix]
 
     go_modules: dict[str, str] = {}
+    ts_configs: dict[str, str] = {}
+    python_projects: set[str] = set()
 
     def declare_python_dependencies(path, project_id, requirements):
         declared = set()
@@ -223,6 +267,8 @@ def analyze_repository(root: Path, url: str, ref: str | None, limits: Settings,
                       parent=directory_ids[parent_path.as_posix()])
         file_ids[path] = file_id
         counts["files"] += 1
+        if file.name in PYTHON_PROJECT_FILES:
+            python_projects.add(posixpath.dirname(path))
         suffix = file.suffix.lower()
         if suffix in LANGUAGES:
             technologies.add(LANGUAGES[suffix][0])
@@ -238,6 +284,15 @@ def analyze_repository(root: Path, url: str, ref: str | None, limits: Settings,
             project_id = add("project", path, file.name, "Project manifest", parent=file_id)
         if file.stat().st_size > limits.max_source_bytes:
             counts["skipped"] += 1
+            continue
+        if TS_CONFIG_NAME.fullmatch(file.name):
+            # Read as data for import path aliases only; TypeScript itself is never run.
+            config = file.read_bytes()
+            if len(config) <= MAX_TS_CONFIG_BYTES and b"\0" not in config:
+                try:
+                    ts_configs[path] = config.decode("utf-8-sig")
+                except UnicodeDecodeError:
+                    pass
             continue
         if suffix not in LANGUAGES and not manifest:
             continue
@@ -540,26 +595,145 @@ def analyze_repository(root: Path, url: str, ref: str | None, limits: Settings,
                 best_dir, best_module = module_dir, module_path
         return best_dir, best_module
 
+    def python_roots_for(file_path):
+        """Absolute-import prefixes: enclosing Python projects (src/ layout first), nearest
+        project first, then the repository root."""
+        prefixes = []
+        for project in sorted(python_projects, key=len, reverse=True):
+            if project and not file_path.startswith(project + "/"):
+                continue
+            for folder in (posixpath.join(project, "src"), project):
+                if folder and folder in directory_ids and f"{folder}/" not in prefixes:
+                    prefixes.append(f"{folder}/")
+        return [*prefixes, ""]
+
+    parsed_ts_configs: dict[str, object] = {}
+
+    def ts_options(config_path, chain=()):
+        """baseUrl and paths for one config, with relative `extends` applied as data."""
+        if config_path in chain or len(chain) > 8 or config_path not in ts_configs:
+            return {}
+        if config_path not in parsed_ts_configs:
+            try:
+                parsed_ts_configs[config_path] = jsonc_loads(ts_configs[config_path])
+            except (ValueError, RecursionError):
+                parsed_ts_configs[config_path] = None
+                limitations.append(
+                    f"Unreadable {config_path}; its import path aliases were not applied.")
+        document = parsed_ts_configs[config_path]
+        if not isinstance(document, dict):
+            return {}
+        config_dir = posixpath.dirname(config_path)
+        options = {}
+        extends = document.get("extends")
+        for parent in extends if isinstance(extends, list) else [extends]:
+            # Package extends (e.g. @tsconfig/node20) would need installed packages.
+            if isinstance(parent, str) and parent.startswith("."):
+                target = posixpath.normpath(posixpath.join(config_dir, parent))
+                options.update(ts_options(target if target.endswith(".json") else target + ".json",
+                                          (*chain, config_path)))
+        compiler = document.get("compilerOptions")
+        if isinstance(compiler, dict):
+            if isinstance(compiler.get("baseUrl"), str):
+                options["base_url"] = posixpath.normpath(
+                    posixpath.join(config_dir, compiler["baseUrl"]))
+            if isinstance(compiler.get("paths"), dict):
+                options["paths"] = compiler["paths"]
+                options["paths_dir"] = config_dir
+        return options
+
+    def inside_repository(candidate):
+        return (candidate not in {"", ".", ".."} and not candidate.startswith(("../", "/"))
+                and ":" not in candidate)
+
+    def ts_alias_bases(file_path, label):
+        """(label matched a declared paths alias, candidate base paths) from the nearest
+        tsconfig.json or jsconfig.json above the importing file."""
+        folder, config = posixpath.dirname(file_path), None
+        while config is None:
+            config = next((candidate for name in ("tsconfig.json", "jsconfig.json")
+                           if (candidate := posixpath.join(folder, name)) in ts_configs), None)
+            if config is None and not folder:
+                return False, []
+            folder = posixpath.dirname(folder)
+        options = ts_options(config)
+        paths = options.get("paths", {})
+        # TypeScript resolves paths from baseUrl when set, otherwise from the defining config.
+        root = options.get("base_url", options.get("paths_dir", ""))
+        best = None
+        for pattern, targets in paths.items():
+            if not isinstance(pattern, str) or not isinstance(targets, list) or pattern.count("*") > 1:
+                continue
+            if pattern == label:
+                best = (float("inf"), targets, "")
+            elif "*" in pattern:
+                prefix, suffix = pattern.split("*")
+                if (len(label) >= len(prefix) + len(suffix) and label.startswith(prefix)
+                        and label.endswith(suffix) and (best is None or len(prefix) > best[0])):
+                    best = (len(prefix), targets, label[len(prefix):len(label) - len(suffix)])
+        if best:
+            bases = []
+            for target in best[1][:20]:
+                if isinstance(target, str):
+                    candidate = posixpath.normpath(posixpath.join(root, target.replace("*", best[2])))
+                    if inside_repository(candidate):
+                        bases.append(candidate)
+            return True, bases
+        if "base_url" in options:
+            candidate = posixpath.normpath(posixpath.join(options["base_url"], label))
+            if inside_repository(candidate):
+                return False, [candidate]
+        return False, []
+
+    def script_candidates(base):
+        candidates = [base, *(base + suffix for suffix in SCRIPT_SUFFIXES),
+                      *(base + "/index" + suffix for suffix in SCRIPT_SUFFIXES)]
+        if base.endswith((".js", ".jsx")):
+            # TypeScript sources are imported with their emitted JavaScript extension.
+            stem = base.rsplit(".", 1)[0]
+            candidates.extend([stem + ".ts", stem + ".tsx"])
+        return candidates
+
+    def unique_script_target(bases):
+        """The first alias target with any indexed candidate decides; ambiguity stays unresolved."""
+        for base in bases:
+            found = {file_ids[c] for c in script_candidates(base) if c in file_ids}
+            if found:
+                return found.pop() if len(found) == 1 else None
+        return None
+
     for imported in [node for node in nodes if node.kind == "import"]:
         guard()
         path = imported.path
         directory = posixpath.dirname(path)
         label = imported.label
+        language = imported.attributes.get("language")
+        # Marks imports that name repository source, so a failed resolution is a real gap
+        # rather than a package, standard-library module or namespace.
+        imported.attributes["local_import"] = False
         candidates = []
-        if str(imported.attributes.get("language")) in {"TypeScript", "JavaScript"}:
+        if language in {"TypeScript", "JavaScript"}:
             if not label.startswith("."):
+                matched, bases = ts_alias_bases(path, label)
+                # A declared alias, or the conventional @/ alias (npm scopes are always
+                # @scope/name), names the project's own source even when unresolved.
+                imported.attributes["local_import"] = matched or label.startswith("@/")
+                target = unique_script_target(bases)
+                if target:
+                    imported.attributes["local_import"] = True
+                    link(imported.id, target, "RESOLVES_TO",
+                         "Unique source-path candidate through a tsconfig/jsconfig path alias; "
+                         "bundler aliases are not evaluated",
+                         lines=imported.evidence[0].lines, confidence=80)
                 continue
+            imported.attributes["local_import"] = True
             base = posixpath.normpath(posixpath.join(directory, label))
             if base.startswith(("../", "/")):
                 continue
-            candidates = [base, *(base + suffix for suffix in SCRIPT_SUFFIXES),
-                          *(base + "/index" + suffix for suffix in SCRIPT_SUFFIXES)]
-            if base.endswith((".js", ".jsx")):
-                # TypeScript sources are imported with their emitted JavaScript extension.
-                stem = base.rsplit(".", 1)[0]
-                candidates.extend([stem + ".ts", stem + ".tsx"])
-        elif imported.attributes.get("language") == "Python":
+            candidates = script_candidates(base)
+        elif language == "Python":
             if label.startswith("."):
+                imported.attributes["local_import"] = True
                 # Leading dots select the package level; the first dot is this directory.
                 levels = len(label) - len(label.lstrip("."))
                 base = directory
@@ -568,15 +742,26 @@ def analyze_repository(root: Path, url: str, ref: str | None, limits: Settings,
                 remainder = label[levels:].replace(".", "/")
                 base = posixpath.normpath(posixpath.join(base, remainder)) if remainder else base
             else:
-                # Absolute modules are also tried from the repository root.
-                base = label.replace(".", "/")
+                module = label.replace(".", "/")
+                head = module.split("/", 1)[0]
+                # Absolute modules are tried from the nearest enclosing Python project root
+                # (and its src/) before the repository root; the first root holding the
+                # module decides. os, requests and other installed modules stay non-local.
+                roots = python_roots_for(path)
+                imported.attributes["local_import"] = any(
+                    f"{prefix}{head}.py" in file_ids or f"{prefix}{head}/__init__.py" in file_ids
+                    or f"{prefix}{head}" in directory_ids for prefix in roots)
+                base = next((f"{prefix}{module}" for prefix in roots
+                             if any(f"{prefix}{module}{suffix}" in file_ids
+                                    for suffix in (".py", ".pyi", "/__init__.py"))), module)
             if not base or base in {"."} or base.startswith(("../", "/")):
                 continue
             candidates = [base + ".py", base + ".pyi", base + "/__init__.py"]
-        elif imported.attributes.get("language") == "Go":
+        elif language == "Go":
             # Go imports address package directories, not files.
             module_dir, module_path = go_module_for(path)
             if module_path and (label == module_path or label.startswith(module_path + "/")):
+                imported.attributes["local_import"] = True
                 remainder = label[len(module_path):].strip("/")
                 base = posixpath.normpath(posixpath.join(module_dir or "", remainder))
                 target = directory_ids.get(base if base != "" else ".")
