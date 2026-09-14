@@ -7,7 +7,7 @@ export const answerSchema = z.object({ answer: z.string(), citations: z.array(z.
 export const loginSchema = z.object({ url: z.string().url().refine(value => new URL(value).origin === "https://auth.openai.com") });
 export async function assistantApi(path: string, body?: unknown) {
   const response = await fetch(`/api/analyses/assistant/${path}`, {
-    method: body === undefined ? "GET" : "POST", headers: { "X-Code-Atlas-Local": "1", "Content-Type": "application/json" },
+    method: body === undefined ? "GET" : "POST", headers: { "X-Codandy-Local": "1", "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path === "ask" ? 190000 : 35000),
   });
   const result = await response.json().catch(() => null);

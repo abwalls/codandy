@@ -1,8 +1,8 @@
-# Code Atlas delivery plan
+# Codandy delivery plan
 
 ## Product goal
 
-Code Atlas turns an unfamiliar repository into an interactive, evidence-backed mental model. The deterministic code graph is the source of truth; AI investigates and explains that graph without inventing relationships.
+Codandy turns an unfamiliar repository into an interactive, evidence-backed mental model. The deterministic code graph is the source of truth; AI investigates and explains that graph without inventing relationships.
 
 ## MVP experience
 
@@ -91,7 +91,7 @@ Next steps, in order:
    rather than boundaries, layers, and external systems, and flows are bounded local
    traversals rather than reconstructed paths. Do not replace unsupported states with
    speculative findings.
-2. Before hosted deployment, implement durable shared state, access control and operational limits. Dockerfile repair is explicitly deferred; its current build commands are not valid. Configure CODE_ATLAS_API_URL only after a working service exists.
+2. Before hosted deployment, implement durable shared state, access control and operational limits. Dockerfile repair is explicitly deferred; its current build commands are not valid. Configure CODANDY_API_URL only after a working service exists.
 3. Replace the sample report's remaining placeholder sections with real rendering, and
    consolidate the sample and live reports onto one navigation shell when the sample
    scope is explicitly expanded. The real report path already renders all four M2 sections.

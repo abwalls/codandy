@@ -25,7 +25,7 @@ def public_json(url: str, body=None):
         raise ValueError("Unapproved metadata endpoint")
     request = Request(url, data=json.dumps(body).encode() if body is not None else None,
                       headers={"Accept": "application/json", "Content-Type": "application/json",
-                               "User-Agent": "CodeAtlas/0.1 dependency-metadata"})
+                               "User-Agent": "Codandy/0.1 dependency-metadata"})
     with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=8) as response:
         payload = response.read(4 * 1024 * 1024 + 1)
         if len(payload) > 4 * 1024 * 1024:

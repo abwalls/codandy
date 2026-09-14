@@ -1,9 +1,22 @@
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    SettingsConfigDict,
+)
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="CODE_ATLAS_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="CODANDY_", env_file=".env", extra="ignore")
+
+    @classmethod
+    def settings_customise_sources(cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings):
+        # Existing installations can migrate without losing report/auth settings.
+        return (init_settings, env_settings,
+                EnvSettingsSource(settings_cls, env_prefix="CODE_ATLAS_"), dotenv_settings,
+                DotEnvSettingsSource(settings_cls, env_file=dotenv_settings.env_file, env_prefix="CODE_ATLAS_"),
+                file_secret_settings)
 
     environment: str = "development"
     allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
@@ -12,7 +25,7 @@ class Settings(BaseSettings):
     report_root: str | None = None
     codex_enabled: bool = False
     codex_executable: str = ""
-    codex_home: str = ".codex-atlas"
+    codex_home: str = ".codex-codandy"
     max_repository_mb: int = Field(default=250, ge=1, le=1000)
     max_file_count: int = Field(default=25000, ge=1, le=100000)
     max_path_depth: int = Field(default=30, ge=1, le=100)

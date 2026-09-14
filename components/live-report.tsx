@@ -12,11 +12,11 @@ import { Dependencies } from "@/components/dependencies";
 import { SourceView } from "@/components/source-view";
 import { OverviewDetails } from "@/components/overview-details";
 import { overviewLabels, overviewNodes, type OverviewMetric } from "@/lib/overview-details";
-import { AskAtlasProvider, AskButton } from "@/components/ask-atlas";
+import { AskCodandyProvider, AskButton } from "@/components/ask-codandy";
 import { buildAskContext } from "@/lib/ask-context";
 
 export function LiveReport(props: { atlas: AnalysisAtlas; jobId: string | null; onExit: () => void }) {
-  return <AskAtlasProvider jobId={props.jobId} contextFor={scope => buildAskContext(props.atlas, scope)}><LiveReportContent {...props} /></AskAtlasProvider>;
+  return <AskCodandyProvider jobId={props.jobId} contextFor={scope => buildAskContext(props.atlas, scope)}><LiveReportContent {...props} /></AskCodandyProvider>;
 }
 
 function LiveReportContent({ atlas, jobId, onExit }: { atlas: AnalysisAtlas; jobId: string | null; onExit: () => void }) {
@@ -49,13 +49,13 @@ function LiveReportContent({ atlas, jobId, onExit }: { atlas: AnalysisAtlas; job
   }
   return <main className="atlas-grid min-h-svh bg-[var(--background)] text-slate-100">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-      <div className="min-w-0"><div className="font-semibold text-cyan-200">Code Atlas <span className="ml-2 text-xs text-emerald-300">Real analysis</span></div>
+      <div className="min-w-0"><div className="font-semibold text-cyan-200">Codandy <span className="ml-2 text-xs text-emerald-300">Real analysis</span></div>
         <h1 className="break-all text-lg">{atlas.repository.url?.replace("https://github.com/", "").replace(/\.git$/, "")}</h1>
         <p className="text-xs text-slate-400">{atlas.repository.branch || atlas.repository.ref} · commit {atlas.repository.commit?.slice(0, 12) || "not detected"}</p></div>
       <div className="flex flex-wrap items-center gap-2"><ThemePicker /><Button variant="outline" onClick={download}>Download atlas</Button><Button onClick={onExit}>New analysis</Button></div>
     </header>
     <div className="mx-auto grid max-w-[1600px] gap-6 p-5 lg:grid-cols-[210px_minmax(0,1fr)]">
-      <nav aria-label="Report sections" className="flex flex-wrap content-start gap-2 lg:flex-col">{sections.map(item => <Button key={item} variant="ghost" aria-current={section === item ? "page" : undefined} className={`justify-start ${section === item ? "bg-cyan-300/10 text-cyan-200" : "text-slate-400"}`} onClick={() => setSection(item)}>{item}</Button>)}<p className="p-3 text-xs text-slate-500">Ask Atlas can use your local ChatGPT/Codex connection. Your plan’s usage limits apply.</p></nav>
+      <nav aria-label="Report sections" className="flex flex-wrap content-start gap-2 lg:flex-col">{sections.map(item => <Button key={item} variant="ghost" aria-current={section === item ? "page" : undefined} className={`justify-start ${section === item ? "bg-cyan-300/10 text-cyan-200" : "text-slate-400"}`} onClick={() => setSection(item)}>{item}</Button>)}<p className="p-3 text-xs text-slate-500">Ask Codandy can use your local ChatGPT/Codex connection. Your plan’s usage limits apply.</p></nav>
       <div className="min-w-0 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl font-semibold">{section}</h2><AskButton scope={{ title: section, nodeIds: section === "Codebase" ? filtered.slice(0, 24).map(node => node.id) : reportSection?.items.flatMap(item => item.node_ids), notes: reportSection ? JSON.stringify(reportSection.items.slice(0, 6).map(item => ({ title: item.title, description: item.description, basis: item.basis }))) : undefined }}>Ask about this page</AskButton></div>
         {!jobId && <p className="rounded-xl border border-amber-300/20 p-3 text-sm text-amber-200">Saved atlas snapshot. Reports and graph evidence are available offline; source text and commit freshness are not available.</p>}

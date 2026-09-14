@@ -53,8 +53,8 @@ backend/.venv-managed/
 .workspaces/
 backend/.workspaces/
 backend/.reports/
-backend/.codex-atlas/
-/.codex-atlas/
+backend/.codex-codandy/
+/.codex-codandy/
 /.reports/
 /build/
 backend/.pytest_cache/

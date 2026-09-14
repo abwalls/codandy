@@ -54,7 +54,7 @@ import { ThemePicker } from "@/components/theme-picker";
 import { LiveReport } from "@/components/live-report";
 import { OverviewDetails } from "@/components/overview-details";
 import { type OverviewMetric } from "@/lib/overview-details";
-import { AskAtlasProvider, AskButton, useAskAtlas } from "@/components/ask-atlas";
+import { AskCodandyProvider, AskButton, useAskCodandy } from "@/components/ask-codandy";
 import { api, atlasSchema, jobSchema, type AnalysisAtlas, type AnalysisJob } from "@/lib/analysis-api";
 
 type View = "intake" | "analyzing" | "report";
@@ -133,7 +133,7 @@ function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: 
         <div className="flex items-center gap-3">
           <BrandMark />
           <div>
-            <div className="text-[15px] font-semibold tracking-[-0.02em]">Code Atlas</div>
+            <div className="text-[15px] font-semibold tracking-[-0.02em]">Codandy</div>
             <div className="text-xs text-slate-500">Repository intelligence</div>
           </div>
         </div>
@@ -267,7 +267,7 @@ function ReportSidebar({ section, onSection }: { section: Section; onSection: (s
         <div className="flex items-center gap-3 px-1">
           <BrandMark />
           <div>
-            <div className="text-[15px] font-semibold text-slate-100">Code Atlas</div>
+            <div className="text-[15px] font-semibold text-slate-100">Codandy</div>
             <div className="text-xs text-slate-500">northstar/banking</div>
           </div>
         </div>
@@ -396,7 +396,7 @@ function NodeInspector({ node, onClose, onAsk }: { node: AtlasNode; onClose: () 
       </div>
       <div className="grid grid-cols-2 gap-2 border-t border-white/[0.07] p-4">
         <Button variant="outline" className="border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.07] hover:text-white"><Braces /> View code</Button>
-        <Button onClick={onAsk} className="bg-cyan-300 text-[var(--primary-foreground)] hover:bg-cyan-200"><Sparkles /> Ask Atlas</Button>
+        <Button onClick={onAsk} className="bg-cyan-300 text-[var(--primary-foreground)] hover:bg-cyan-200"><Sparkles /> Ask Codandy</Button>
       </div>
     </aside>
   );
@@ -539,13 +539,13 @@ function PlaceholderSection({ section }: { section: Section }) {
 }
 
 function Report({ onExit }: { onExit: () => void }) {
-  return <AskAtlasProvider contextFor={scope => ({ sample: true, warning: "Illustrative banking sample, not analyzed repository evidence.", scope: scope.title, notes: scope.notes, repository: demoAtlas.repository, nodes: scope.nodeIds ? demoAtlas.nodes.filter(node => scope.nodeIds!.includes(node.id)) : demoAtlas.nodes, relationships: demoAtlas.relationships })}><SampleReportContent onExit={onExit} /></AskAtlasProvider>;
+  return <AskCodandyProvider contextFor={scope => ({ sample: true, warning: "Illustrative banking sample, not analyzed repository evidence.", scope: scope.title, notes: scope.notes, repository: demoAtlas.repository, nodes: scope.nodeIds ? demoAtlas.nodes.filter(node => scope.nodeIds!.includes(node.id)) : demoAtlas.nodes, relationships: demoAtlas.relationships })}><SampleReportContent onExit={onExit} /></AskCodandyProvider>;
 }
 
 function SampleReportContent({ onExit }: { onExit: () => void }) {
   const [section, setSection] = useState<Section>("overview");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const ask = useAskAtlas();
+  const ask = useAskCodandy();
   const selectedNode = useMemo(() => demoAtlas.nodes.find((node) => node.id === selectedId) ?? null, [selectedId]);
 
   return (
@@ -584,7 +584,7 @@ function SampleReportContent({ onExit }: { onExit: () => void }) {
   );
 }
 
-export function CodeAtlasWorkspace() {
+export function CodandyWorkspace() {
   const [view, setView] = useState<View>("intake");
   const [source, setSource] = useState("");
   const [job, setJob] = useState<AnalysisJob | null>(null);
@@ -670,7 +670,7 @@ export function CodeAtlasWorkspace() {
         {
           name: "start_repository_analysis",
           title: "Analyze repository",
-          description: "Start the visible Code Atlas analysis flow for a public Git repository URL.",
+          description: "Start the visible Codandy analysis flow for a public Git repository URL.",
           inputSchema: {
             type: "object",
             properties: {

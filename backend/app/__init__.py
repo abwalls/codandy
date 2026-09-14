@@ -1,1 +1,1 @@
-"""Code Atlas API package."""
+"""Codandy API package."""

@@ -2,8 +2,8 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    CODE_ATLAS_ENVIRONMENT=production \
-    CODE_ATLAS_WORKSPACE_ROOT=/tmp/code-atlas-workspaces
+    CODANDY_ENVIRONMENT=production \
+    CODANDY_WORKSPACE_ROOT=/tmp/codandy-workspaces
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y git ca-certificates \
@@ -16,8 +16,8 @@ RUN pip install --no-cache-dir uv \
 COPY app ./app
 
 RUN useradd --create-home --uid 10001 atlas \
-    && mkdir -p /tmp/code-atlas-workspaces \
-    && chown -R atlas:atlas /app /tmp/code-atlas-workspaces
+    && mkdir -p /tmp/codandy-workspaces \
+    && chown -R atlas:atlas /app /tmp/codandy-workspaces
 USER atlas
 
 EXPOSE 8000

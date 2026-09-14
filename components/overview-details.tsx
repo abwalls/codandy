@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { overviewLabels, type OverviewMetric } from "@/lib/overview-details";
-import { AskButton } from "@/components/ask-atlas";
+import { AskButton } from "@/components/ask-codandy";
 
 export type OverviewRow = { id: string; label: string; path: string; kind: string; detail: string };
 export function OverviewDetails({ metric, rows, total, sample = false, onClose, onInspect }: {

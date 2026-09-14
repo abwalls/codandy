@@ -7,14 +7,14 @@ import { useSyncExternalStore, type ReactNode } from "react";
 const subscribe = () => () => {};
 
 const themes = [
-  ["atlas", "Atlas Midnight"],
+  ["atlas", "Codandy Midnight"],
   ["forbright", "Demo background"],
   ["tennessee", "Vol Orange"],
   ["violet", "Violet Night"],
   ["graphite", "Graphite"],
 ] as const;
 
-export function AtlasThemeProvider({ children }: { children: ReactNode }) {
+export function CodandyThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeProvider attribute="data-theme" defaultTheme="atlas" enableSystem={false}
     storageKey="code-atlas-theme" themes={themes.map(([id]) => id)}>{children}</ThemeProvider>;
 }

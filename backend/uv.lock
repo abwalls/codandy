@@ -52,7 +52,7 @@ wheels = [
 ]
 
 [[package]]
-name = "code-atlas-api"
+name = "codandy-api"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

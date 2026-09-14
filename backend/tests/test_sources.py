@@ -63,7 +63,7 @@ def test_oversized_files_truncate_on_a_line_boundary(tmp_path):
 
 
 def test_only_indexed_repository_paths_become_addressable(tmp_path):
-    outside = tmp_path.parent / "code-atlas-outside-probe.txt"
+    outside = tmp_path.parent / "codandy-outside-probe.txt"
     outside.write_bytes(b"DO_NOT_READ\n")
     try:
         _, (sources, _) = capture(tmp_path, {"index.ts": "export function run() {}\n"})

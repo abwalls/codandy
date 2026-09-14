@@ -1,4 +1,4 @@
-# Code Atlas roadmap and status
+# Codandy roadmap and status
 
 **Status report for Andrew.** Last updated 2026-09-12 after reviewing Astra 6's
 "Continued v1 completion" slice. Verified by re-running the full suite, not read off
@@ -8,7 +8,7 @@ checkpoints.
 
 ## Implementation update ? 2026-09-13
 
-The review below is a historical snapshot. Since that review, defects 2-5 were fixed, deployment claims corrected, and cross-folder import/circular-import reports added. Saved atlas reopening, snapshot comparison, reverse dependency inspection, opt-in local completed-report persistence, recent reports and confirmed removal are now implemented. Five persistent color presets include Atlas Midnight (default), Forbright and Vol Orange. Verification now covers 87 backend tests and 13 frontend contracts; browser QA remains unavailable. Shared multi-user persistence/auth, uploads, Codex integration and hosted deployment are still unfinished. Dockerfile/debugging deferrals remain in effect.
+The review below is a historical snapshot. Since that review, defects 2-5 were fixed, deployment claims corrected, and cross-folder import/circular-import reports added. Saved atlas reopening, snapshot comparison, reverse dependency inspection, opt-in local completed-report persistence, recent reports and confirmed removal are now implemented. Five persistent color presets include Codandy Midnight (default), Forbright and Vol Orange. Verification now covers 87 backend tests and 13 frontend contracts; browser QA remains unavailable. Shared multi-user persistence/auth, uploads, Codex integration and hosted deployment are still unfinished. Dockerfile/debugging deferrals remain in effect.
 
 ## Where the project actually stood at review time
 
@@ -16,7 +16,7 @@ The review below is a historical snapshot. Since that review, defects 2-5 were f
 M0  Foundation                  ████████████████████  done
 M1  Real repo analysis          ████████████████████  done, live-verified
 M2  Grounded reports            ███████████████·····  ~75%
-M3  Codex / Ask Atlas           ····················  not started
+M3  Codex / Ask Codandy           ····················  not started
 M4  Inputs & persistence        ····················  not started
 M5  Debugging overlay (v2)      ····················  deliberately deferred
 ```
@@ -98,9 +98,9 @@ Still thin:
 - **Only 4 recommendation rules** — long declarations, high import count, `eval`, raw HTML.
   No performance analysis, no data-flow, no vulnerability lookup.
 
-### M3 — Codex / Ask Atlas (0%)
+### M3 — Codex / Ask Codandy (0%)
 
-The "Ask Atlas" button exists on the sample path with canned answers; on the real path it
+The "Ask Codandy" button exists on the sample path with canned answers; on the real path it
 says "not available yet." Nothing behind it. Needs the ChatGPT-authenticated session
 adapter, read-only investigation tools (symbols, callers, callees, routes, source), and
 node-scoped questions with citations. The multi-tenant policy question in `PLAN.md` is
@@ -170,7 +170,7 @@ The ordering matters more than the individual items. My recommendation:
      policy question.
 
 **Phase 3 — depends on Phase 2**
-4. If hosted: persistence, then the Dockerfile, then hosting, then `CODE_ATLAS_API_URL`.
+4. If hosted: persistence, then the Dockerfile, then hosting, then `CODANDY_API_URL`.
 5. If local: M2 depth, then M3 Codex, then M5 debugging.
 
 **Phase 4 — differentiation**

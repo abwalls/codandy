@@ -62,7 +62,7 @@ def test_complete_artifact_and_sse_replay(repository):
         assert atlas.repository["branch"] == "main"
         assert state["exited"]
         assert AtlasDocument.model_validate_json(
-            (root / ".codeatlas" / "atlas.json").read_text(encoding="utf-8")) == atlas
+            (root / ".codandy" / "atlas.json").read_text(encoding="utf-8")) == atlas
         events = client.get(f"/api/analyses/{job_id}/events")
         assert events.headers["content-type"].startswith("text/event-stream")
         blocks = events.text.strip().split("\n\n")

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AtlasThemeProvider } from "@/components/theme-picker";
+import { CodandyThemeProvider } from "@/components/theme-picker";
 
 export const metadata: Metadata = {
-  title: "Code Atlas | Repository Intelligence",
+  title: "Codandy | Repository Intelligence",
   description: "Build a grounded, interactive map of an unfamiliar codebase.",
   manifest: "/manifest.webmanifest",
   other: {
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased"><AtlasThemeProvider>{children}</AtlasThemeProvider></body>
+      <body className="antialiased"><CodandyThemeProvider>{children}</CodandyThemeProvider></body>
     </html>
   );
 }

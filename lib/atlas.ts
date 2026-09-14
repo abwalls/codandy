@@ -24,7 +24,7 @@ export type AtlasRelationship = {
   type: "CALLS" | "ROUTES_TO" | "READS" | "WRITES";
 };
 
-export type CodeAtlas = {
+export type Codandy = {
   schemaVersion: "0.1";
   repository: {
     name: string;
@@ -49,7 +49,7 @@ export type CodeAtlas = {
   relationships: AtlasRelationship[];
 };
 
-export const demoAtlas: CodeAtlas = {
+export const demoAtlas: Codandy = {
   schemaVersion: "0.1",
   repository: {
     name: "northstar/banking-platform",

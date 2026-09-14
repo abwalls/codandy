@@ -1,6 +1,8 @@
-# Code Atlas
+# Codandy
 
-Code Atlas builds an interactive, evidence-backed mental model of an unfamiliar repository. It combines deterministic code analysis with AI investigation so architectural claims, application flows, and explanations remain traceable to source.
+Formerly Code Atlas. New configuration uses `CODANDY_*`; existing `CODE_ATLAS_*` settings remain supported during migration. The saved browser theme key is retained so your chosen color scheme survives the rename. Existing atlas JSON reports remain compatible; new analysis artifacts are written to `.codandy/atlas.json`.
+
+Codandy builds an interactive, evidence-backed mental model of an unfamiliar repository. It combines deterministic code analysis with AI investigation so architectural claims, application flows, and explanations remain traceable to source.
 
 ## Current foundation
 
@@ -11,7 +13,7 @@ Code Atlas builds an interactive, evidence-backed mental model of an unfamiliar 
 - Stable graph node identities and source evidence
 - Multi-language syntax indexing: C#, TypeScript/TSX, JavaScript/JSX, Python, Go
 - Source viewer with evidence-range highlighting
-- Context-aware “Ask Atlas” experience
+- Context-aware “Ask Codandy” experience
 - Python 3.12 FastAPI backend scaffold
 - Private deployable demo
 
@@ -84,8 +86,8 @@ The opt-in `backend/smoke.py` performs a live public GitHub clone through the AP
 atlas retrieval, SSE, and workspace cleanup; run it with the backend Python interpreter.
 
 Local development forwards `/api/analyses` to `http://127.0.0.1:8000`. Hosted builds require
-`CODE_ATLAS_API_URL` set to a separately hosted Python service's HTTPS origin. Until that
-service is configured, hosted analysis returns an explicit unavailable message. Reports are kept in memory by default and expire on restart or retention eviction. Set `CODE_ATLAS_REPORT_ROOT=.reports` in `backend/.env` to retain completed reports and captured source across local API restarts. The intake **Recent reports** button reopens retained analyses.
+`CODANDY_API_URL` set to a separately hosted Python service's HTTPS origin. Until that
+service is configured, hosted analysis returns an explicit unavailable message. Reports are kept in memory by default and expire on restart or retention eviction. Set `CODANDY_REPORT_ROOT=.reports` in `backend/.env` to retain completed reports and captured source across local API restarts. The intake **Recent reports** button reopens retained analyses.
 
 The backend Dockerfile is an unverified draft with known dependency-install and executable-path defects; repairs are deferred. It is not currently deployable as documented. Hosted use also requires durable shared state, access control and operational limits: the current in-memory single-worker API cannot support multiple replicas.
 
@@ -95,18 +97,18 @@ Read [PLAN.md](PLAN.md) for milestones and [ARCHITECTURE.md](ARCHITECTURE.md) fo
 
 ## Security boundary
 
-Normal analysis is static and treats every repository as untrusted input. Code Atlas must not install repository dependencies, run builds, execute tests, invoke project scripts, or run repository binaries by default.
+Normal analysis is static and treats every repository as untrusted input. Codandy must not install repository dependencies, run builds, execute tests, invoke project scripts, or run repository binaries by default.
 
 
 ### Local completed-report retention
 
-`CODE_ATLAS_REPORT_ROOT` enables local snapshots (one API process per directory). Each successful analysis writes a validated atlas, captured source and progress events atomically before reporting completion. Snapshots are capped at 128 MB each and retained up to `CODE_ATLAS_MAX_JOBS`; oldest reports are evicted when new jobs arrive. In-flight jobs are not resumed after a crash. Invalid snapshots are skipped. Source snapshots are plaintext: keep the storage directory private and out of source control. The default `.reports` directory is ignored by Git and container context.
+`CODANDY_REPORT_ROOT` enables local snapshots (one API process per directory). Each successful analysis writes a validated atlas, captured source and progress events atomically before reporting completion. Snapshots are capped at 128 MB each and retained up to `CODANDY_MAX_JOBS`; oldest reports are evicted when new jobs arrive. In-flight jobs are not resumed after a crash. Invalid snapshots are skipped. Source snapshots are plaintext: keep the storage directory private and out of source control. The default `.reports` directory is ignored by Git and container context.
 
 This is local persistence, not a shared multi-replica datastore or access-control system. Do not expose the unauthenticated API as a multi-user service. Custom storage paths must also be excluded from source control.
 
 ### Color schemes
 
-Use the header color picker to switch between Atlas Midnight (default), Demo background, Vol Orange, Violet Night and Graphite. The preference is saved on this device. Demo background and Vol Orange use publicly documented brand colors with supporting dark surfaces adapted to Code Atlas; these are visual presets, not affiliated products.
+Use the header color picker to switch between Codandy Midnight (default), Demo background, Vol Orange, Violet Night and Graphite. The preference is saved on this device. Demo background and Vol Orange use publicly documented brand colors with supporting dark surfaces adapted to Codandy; these are visual presets, not affiliated products.
 
 ### Dependencies
 
@@ -122,8 +124,8 @@ Click **Source files**, **Symbols**, **API routes** or **Tests** in Overview for
 
 ### Use your ChatGPT plan locally
 
-Install Codex, then set `CODE_ATLAS_CODEX_ENABLED=true` and `CODE_ATLAS_CODEX_EXECUTABLE` to the Codex executable in the backend's ignored `.env`. Start the backend from its directory. `CODE_ATLAS_CODEX_HOME` defaults to an isolated `.codex-atlas` folder; never commit it. This uses OpenAI's Codex App Server ChatGPT sign-in, not an API key or copied browser cookies.
+Install Codex, then set `CODANDY_CODEX_ENABLED=true` and `CODANDY_CODEX_EXECUTABLE` to the Codex executable in the backend's ignored `.env`. Start the backend from its directory. `CODANDY_CODEX_HOME` defaults to an isolated `.codex-codandy` folder; never commit it. This uses OpenAI's Codex App Server ChatGPT sign-in, not an API key or copied browser cookies.
 
-Open a retained analysis, choose Ask Atlas, then **Connect ChatGPT → Continue sign-in with OpenAI**. Use the same ChatGPT account you normally use. Return and click **Check connection**. The app selects a default model/effort from the available catalog; you may change either. **Ask using my plan** consumes your account's Codex allowance. Subscription limits and model access still apply; this is not unlimited or guaranteed cheaper for every workload.
+Open a retained analysis, choose Ask Codandy, then **Connect ChatGPT → Continue sign-in with OpenAI**. Use the same ChatGPT account you normally use. Return and click **Check connection**. The app selects a default model/effort from the available catalog; you may change either. **Ask using my plan** consumes your account's Codex allowance. Subscription limits and model access still apply; this is not unlimited or guaranteed cheaper for every workload.
 
 This connection is local-only. The hosted proxy does not expose it. Each question starts a fresh conversation and includes a bounded retained graph excerpt, without source bodies, comparison baselines or live advisory results. Generated answers remain AI explanations; citation IDs are validated but factual correctness needs review. Copied/exported questions remain available for sample/offline reports.

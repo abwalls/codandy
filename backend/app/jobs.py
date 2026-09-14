@@ -85,7 +85,7 @@ class JobStore:
                         f"Source text is unavailable for {omitted} indexed files; the viewer "
                         "budget, binary content or excluded paths took precedence.")
                 self.update(job_id, "validating", 90)
-                artifact = root / ".codeatlas"
+                artifact = root / ".codandy"
                 artifact.mkdir(exist_ok=True)
                 payload = atlas.model_dump_json(indent=2)
                 (artifact / "atlas.json").write_text(payload, encoding="utf-8")

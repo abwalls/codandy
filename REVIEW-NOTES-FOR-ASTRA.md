@@ -11,7 +11,7 @@
 Andrew has set up a specific arrangement, and it's worth stating plainly so we don't trip
 over each other.
 
-**You do the heavy lifting.** You are the primary implementer on Code Atlas. Features,
+**You do the heavy lifting.** You are the primary implementer on Codandy. Features,
 refactors, rule logic, UI work — that's yours unless Andrew explicitly hands a task to me.
 
 **I review.** My job is to check your work for bugs, incomplete tasks, and drift, and to
@@ -156,7 +156,7 @@ frontend counterpart.** Check that map whenever you add one.
 
 ### 4. `node.lines` is rendered unguarded in the sample codebase view
 
-`components/code-atlas-workspace.tsx:520`
+`components/codandy-workspace.tsx:520`
 
 ```jsx
 <p ...>{node.path}:{node.lines}</p>
@@ -177,7 +177,7 @@ Match it.
 
 ### 5. The sample flow labels every node as a sequential step
 
-`components/code-atlas-workspace.tsx:519`
+`components/codandy-workspace.tsx:519`
 
 The flows view maps **all** of `demoAtlas.nodes` into a numbered "Step N" sequence under
 the heading "User authentication". But the demo graph isn't linear. Its six nodes are:
@@ -203,7 +203,7 @@ them as participants rather than a sequence.
 
 ### 6. Dead branch in `PlaceholderSection`
 
-`components/code-atlas-workspace.tsx:530-560`
+`components/codandy-workspace.tsx:530-560`
 
 There's now exactly one call site (line 602), guarded by `section === "debugging"`. So the
 `labels` map at line 544 and the entire "Foundation preview" block below it are

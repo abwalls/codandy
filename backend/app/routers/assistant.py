@@ -18,14 +18,14 @@ LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 def connection(request: Request):
     if not request.client or request.client.host not in LOCAL_HOSTS or request.url.hostname not in LOCAL_HOSTS:
         raise HTTPException(403, "The subscription connection is available on this computer only.")
-    if request.headers.get("x-code-atlas-local") != "1":
+    if request.headers.get("x-codandy-local") != "1" and request.headers.get("x-code-atlas-local") != "1":
         raise HTTPException(403, "Local Atlas client header required.")
     origin = request.headers.get("origin")
     if origin and origin not in {f"http://{host}:{port}" for host in ("localhost", "127.0.0.1") for port in (3000, 5173, 8000)}:
         raise HTTPException(403, "Unapproved browser origin.")
     bridge = getattr(request.app.state, "codex", None)
     if bridge is None:
-        raise HTTPException(503, "Enable CODE_ATLAS_CODEX_ENABLED on the local backend to connect Codex.")
+        raise HTTPException(503, "Enable CODANDY_CODEX_ENABLED on the local backend to connect Codex.")
     if not bridge.lock.acquire(blocking=False):
         raise HTTPException(409, "Codex is handling another request. Wait for it to finish.")
     try:

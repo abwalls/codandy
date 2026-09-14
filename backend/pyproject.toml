@@ -1,7 +1,7 @@
 [project]
-name = "code-atlas-api"
+name = "codandy-api"
 version = "0.1.0"
-description = "Static repository analysis and AI orchestration API for Code Atlas"
+description = "Static repository analysis and AI orchestration API for Codandy"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.116,<1",

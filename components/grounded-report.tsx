@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUpRight, FileCode2, Network, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AskButton } from "@/components/ask-atlas";
+import { AskButton } from "@/components/ask-codandy";
 import type { AnalysisAtlas, GroundedReportItem, GroundedReportSection } from "@/lib/analysis-api";
 
 const categoryLabels: Record<string, string> = {

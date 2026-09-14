@@ -17,7 +17,7 @@ export function matchesDependencyReview(check: DependencyCheck | undefined, revi
 export function dependencyReport(atlas: AnalysisAtlas, checks: Record<string, DependencyCheck>, exportedAt: string) {
   const inventory = atlas.nodes.filter(node => node.kind === "dependency");
   return {
-    format: "code-atlas-dependency-review",
+    format: "codandy-dependency-review",
     format_version: "1",
     exported_at: exportedAt,
     repository: atlas.repository,

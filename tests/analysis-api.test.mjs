@@ -13,7 +13,7 @@ import { test } from "node:test";
 import { atlasSchema, jobSchema, sourceFileSchema, recentReportsSchema, dependencyCheckSchema, api } from "../lib/analysis-api.ts";
 import { GET, POST, DELETE } from "../app/api/analyses/[[...path]]/route.ts";
 
-const python = process.env.CODE_ATLAS_TEST_PYTHON || resolve("backend",
+const python = process.env.CODANDY_TEST_PYTHON || resolve("backend",
   existsSync("backend/.venv-managed") ? ".venv-managed" : ".venv",
   process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
 const generated = spawnSync(python, ["-c", `
@@ -84,11 +84,11 @@ test("API errors expose useful validation and unavailable states", async () => {
 
 test("hosted proxy reports missing configuration and forwards SSE replay", async () => {
   const original = globalThis.fetch;
-  const configured = process.env.CODE_ATLAS_API_URL;
+  const configured = process.env.CODANDY_API_URL;
   try {
-    delete process.env.CODE_ATLAS_API_URL;
+    delete process.env.CODANDY_API_URL;
     assert.equal((await GET(new Request("https://atlas.test/api/analyses"))).status, 503);
-    process.env.CODE_ATLAS_API_URL = "https://api.atlas.test";
+    process.env.CODANDY_API_URL = "https://api.atlas.test";
     assert.equal((await GET(new Request("https://atlas.test/api/analyses/other"))).status, 404);
     globalThis.fetch = async (url, init) => {
       assert.equal(url.origin, "https://api.atlas.test");
@@ -108,21 +108,21 @@ test("hosted proxy reports missing configuration and forwards SSE replay", async
     assert.equal(busy.headers.get("Retry-After"), "5");
   } finally {
     globalThis.fetch = original;
-    if (configured === undefined) delete process.env.CODE_ATLAS_API_URL;
-    else process.env.CODE_ATLAS_API_URL = configured;
+    if (configured === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = configured;
   }
 });
 
 test("source payloads round-trip and the proxy forwards only the path parameter", async () => {
   const original = globalThis.fetch;
-  const configured = process.env.CODE_ATLAS_API_URL;
+  const configured = process.env.CODANDY_API_URL;
   const id = "00000000-0000-4000-8000-000000000000";
   const payload = { path: "src/App.tsx", text: "const a = 1;\n", lines: 1, truncated: false };
   assert.deepEqual(sourceFileSchema.parse(payload), payload);
   assert.equal(sourceFileSchema.safeParse({ ...payload, lines: -1 }).success, false);
   assert.equal(sourceFileSchema.safeParse({ ...payload, truncated: "no" }).success, false);
   try {
-    process.env.CODE_ATLAS_API_URL = "https://api.atlas.test";
+    process.env.CODANDY_API_URL = "https://api.atlas.test";
     globalThis.fetch = async (url) => {
       assert.equal(url.pathname, `/api/analyses/${id}/source`);
       // Exactly one forwarded parameter: never the caller's whole query string.
@@ -137,8 +137,8 @@ test("source payloads round-trip and the proxy forwards only the path parameter"
     assert.equal(missing.status, 400);
   } finally {
     globalThis.fetch = original;
-    if (configured === undefined) delete process.env.CODE_ATLAS_API_URL;
-    else process.env.CODE_ATLAS_API_URL = configured;
+    if (configured === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = configured;
   }
 });
 
@@ -197,8 +197,8 @@ test("recent report contract validates IDs and persistence status", () => {
 
 test("hosted proxy forwards report removal without a body", async () => {
   const oldFetch = globalThis.fetch;
-  const oldOrigin = process.env.CODE_ATLAS_API_URL;
-  process.env.CODE_ATLAS_API_URL = "https://backend.example.com";
+  const oldOrigin = process.env.CODANDY_API_URL;
+  process.env.CODANDY_API_URL = "https://backend.example.com";
   try {
     globalThis.fetch = async (url, init) => {
       assert.equal(init.method, "DELETE");
@@ -209,8 +209,8 @@ test("hosted proxy forwards report removal without a body", async () => {
     assert.equal(response.status, 200);
   } finally {
     globalThis.fetch = oldFetch;
-    if (oldOrigin === undefined) delete process.env.CODE_ATLAS_API_URL;
-    else process.env.CODE_ATLAS_API_URL = oldOrigin;
+    if (oldOrigin === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = oldOrigin;
   }
 });
 
@@ -224,8 +224,8 @@ test("dependency public-check contract rejects unsafe advisory links", () => {
 
 test("hosted dependency checks forward only the node ID", async () => {
   const oldFetch = globalThis.fetch;
-  const oldOrigin = process.env.CODE_ATLAS_API_URL;
-  process.env.CODE_ATLAS_API_URL = "https://backend.example.com";
+  const oldOrigin = process.env.CODANDY_API_URL;
+  process.env.CODANDY_API_URL = "https://backend.example.com";
   try {
     globalThis.fetch = async (url, init) => {
       assert.equal(new URL(url).search, "?node_id=dependency%3Aexample");
@@ -236,8 +236,8 @@ test("hosted dependency checks forward only the node ID", async () => {
     assert.equal(response.status, 200);
   } finally {
     globalThis.fetch = oldFetch;
-    if (oldOrigin === undefined) delete process.env.CODE_ATLAS_API_URL;
-    else process.env.CODE_ATLAS_API_URL = oldOrigin;
+    if (oldOrigin === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = oldOrigin;
   }
 });
 
@@ -266,7 +266,7 @@ test("assistant requests use the local client header and surface connection erro
   try {
     globalThis.fetch = async (url, init) => {
       assert.equal(url, "/api/analyses/assistant/status");
-      assert.equal(init.headers["X-Code-Atlas-Local"], "1");
+      assert.equal(init.headers["X-Codandy-Local"], "1");
       return Response.json({ detail: "Local connection disabled" }, { status: 503 });
     };
     await assert.rejects(() => assistantApi("status"), /Local connection disabled/);
@@ -274,14 +274,14 @@ test("assistant requests use the local client header and surface connection erro
 });
 
 test("hosted proxy does not expose local subscription endpoints", async () => {
-  const previous = process.env.CODE_ATLAS_API_URL;
-  process.env.CODE_ATLAS_API_URL = "https://backend.example.com";
+  const previous = process.env.CODANDY_API_URL;
+  process.env.CODANDY_API_URL = "https://backend.example.com";
   try {
     const response = await GET(new Request("https://atlas.example.com/api/analyses/assistant/status"));
     assert.equal(response.status, 404);
   } finally {
-    if (previous === undefined) delete process.env.CODE_ATLAS_API_URL;
-    else process.env.CODE_ATLAS_API_URL = previous;
+    if (previous === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = previous;
   }
 });
 

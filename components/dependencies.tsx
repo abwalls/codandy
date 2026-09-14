@@ -6,7 +6,7 @@ import { dependencyUsage } from "@/lib/dependency-usage";
 import { dependencyReport, matchesDependencyReview, type DependencyReview } from "@/lib/dependency-report";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AskButton } from "@/components/ask-atlas";
+import { AskButton } from "@/components/ask-codandy";
 
 type Node = AnalysisAtlas["nodes"][number];
 type Check = ReturnType<typeof dependencyCheckSchema.parse>;

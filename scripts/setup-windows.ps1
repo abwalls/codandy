@@ -43,5 +43,5 @@ finally {
 }
 
 Write-Host ""
-Write-Host "Code Atlas is ready." -ForegroundColor Green
+Write-Host "Codandy is ready." -ForegroundColor Green
 Write-Host "Run .\scripts\start-windows.ps1 to start the frontend and backend."

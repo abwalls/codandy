@@ -5,7 +5,7 @@ import { atlasSchema, type AnalysisAtlas } from "@/lib/analysis-api";
 import { compareAtlases } from "@/lib/atlas-comparison";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AskButton } from "@/components/ask-atlas";
+import { AskButton } from "@/components/ask-codandy";
 
 export function AtlasComparison({ atlas, onInspect }: { atlas: AnalysisAtlas; onInspect: (id: string) => void }) {
   const [baseline, setBaseline] = useState<AnalysisAtlas | null>(null);

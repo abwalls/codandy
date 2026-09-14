@@ -1,8 +1,8 @@
-# Code Atlas architecture
+# Codandy architecture
 
 ## Local subscription assistant
 
-Opt-in `CODE_ATLAS_CODEX_ENABLED` starts an installed Codex App Server over private stdio. A dedicated ignored `CODE_ATLAS_CODEX_HOME` stores Codex-managed sign-in state; Code Atlas never reads or copies the normal Codex profile's auth tokens. Browser OAuth is initiated through `account/login/start`, and only an official auth.openai.com URL is returned. `account/read` must report ChatGPT authentication; no API-key fallback is offered.
+Opt-in `CODANDY_CODEX_ENABLED` starts an installed Codex App Server over private stdio. A dedicated ignored `CODANDY_CODEX_HOME` stores Codex-managed sign-in state; Codandy never reads or copies the normal Codex profile's auth tokens. Browser OAuth is initiated through `account/login/start`, and only an official auth.openai.com URL is returned. `account/read` must report ChatGPT authentication; no API-key fallback is offered.
 
 The local `/api/analyses/assistant/*` routes require a loopback peer/host, a custom client header, and an approved local Origin when present. The hosted proxy does not forward them. This is a single-user local integration, not shared-server subscription pooling or hosted end-user authentication.
 
@@ -10,7 +10,7 @@ Model and reasoning choices come from `model/list` and are checked again on subm
 
 ## Source of truth
 
-Every analysis produces a versioned `.codeatlas/atlas.json`. UI pages and AI tools query this artifact instead of relying on free-form model memory.
+Every analysis produces a versioned `.codandy/atlas.json`. UI pages and AI tools query this artifact instead of relying on free-form model memory.
 
 ## Universal graph
 
@@ -49,7 +49,7 @@ The `tree-sitter` core is pinned below 0.26 because 0.26.0 corrupts memory durin
 The analyzer runs in a spawned disposable process. The parent
 forwards progress over SSE, validates the returned artifact, and terminates the process
 on deadline or failure. Native parser crashes are contained within that process.
-This process executes Code Atlas's own static analyzer only, never repository tooling.
+This process executes Codandy's own static analyzer only, never repository tooling.
 
 ## Source viewer boundary
 
@@ -71,7 +71,7 @@ separate sample model. EventSource reconnects using event IDs, with status polli
 recover missed terminal events and detect expired jobs or API restarts.
 
 Local Vite development proxies /api/analyses to FastAPI on port 8000. Hosted builds
-forward those routes to the HTTPS origin configured by CODE_ATLAS_API_URL. The Python
+forward those routes to the HTTPS origin configured by CODANDY_API_URL. The Python
 service needs separate hosting; the Sites Worker cannot run Git or native Python parsing.
 
 ## Future debugging boundary
@@ -81,7 +81,7 @@ Runtime observations remain separate from static facts and attach through stable
 
 ## Local report snapshots
 
-Optional `CODE_ATLAS_REPORT_ROOT` stores completed job/atlas/source/event snapshots under generated job UUID filenames. Writes use a same-directory temporary file, flush/fsync and atomic replacement before publishing completion. Restart restores validated complete jobs; interrupted jobs are not resumed. Retention follows max_jobs with a 128 MB per-snapshot cap. Source endpoints remain map lookups after restoration, never arbitrary request-time file reads. A failed save fails the job explicitly.
+Optional `CODANDY_REPORT_ROOT` stores completed job/atlas/source/event snapshots under generated job UUID filenames. Writes use a same-directory temporary file, flush/fsync and atomic replacement before publishing completion. Restart restores validated complete jobs; interrupted jobs are not resumed. Retention follows max_jobs with a 128 MB per-snapshot cap. Source endpoints remain map lookups after restoration, never arbitrary request-time file reads. A failed save fails the job explicitly.
 
 This directory must be owned by one API process. It adds local durability only; distributed job coordination, authentication, shared storage, and hosted deployment are still future work. GET /api/analyses returns retained completed-report metadata plus whether local persistence is enabled.
 

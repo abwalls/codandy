@@ -60,9 +60,9 @@ def test_connection_requires_local_header_and_origin(assistant_client):
     client, _, _, _ = assistant_client
     path = "/api/analyses/assistant/status"
     assert client.get(path).status_code == 403
-    assert client.get(path, headers={"X-Code-Atlas-Local": "1", "Origin": "https://attacker.example"}).status_code == 403
-    assert client.get(path, headers={"X-Code-Atlas-Local": "1", "Host": "attacker.example"}).status_code == 403
-    result = client.get(path, headers={"X-Code-Atlas-Local": "1", "Origin": "http://localhost:5173"})
+    assert client.get(path, headers={"X-Codandy-Local": "1", "Origin": "https://attacker.example"}).status_code == 403
+    assert client.get(path, headers={"X-Codandy-Local": "1", "Host": "attacker.example"}).status_code == 403
+    result = client.get(path, headers={"X-Codandy-Local": "1", "Origin": "http://localhost:5173"})
     assert result.status_code == 200
     assert result.json()["connected"]
 
@@ -71,7 +71,7 @@ def test_answers_require_valid_model_scope_and_citations(assistant_client):
     client, bridge, atlas, job_id = assistant_client
     selected = next(node.id for node in atlas.nodes if node.kind == "function")
     data = {"analysis_id": str(job_id), "question": "What is a symbol?", "model": "test-model", "effort": "low", "node_ids": [selected]}
-    headers = {"X-Code-Atlas-Local": "1"}
+    headers = {"X-Codandy-Local": "1"}
     path = "/api/analyses/assistant/ask"
     assert client.post(path, json=data, headers=headers).status_code == 200
     assert client.post(path, json={**data, "model": "invented"}, headers=headers).status_code == 422
@@ -99,7 +99,7 @@ def test_busy_bridge_does_not_start_another_request(assistant_client):
     client, bridge, _, _ = assistant_client
     bridge.lock.acquire()
     try:
-        assert client.get("/api/analyses/assistant/status", headers={"X-Code-Atlas-Local": "1"}).status_code == 409
+        assert client.get("/api/analyses/assistant/status", headers={"X-Codandy-Local": "1"}).status_code == 409
     finally:
         bridge.lock.release()
 
@@ -108,7 +108,7 @@ def test_login_accepts_only_official_openai_signin(assistant_client):
     client, bridge, _, _ = assistant_client
     bridge.start = lambda: None
     bridge.rpc = lambda *_: {"authUrl": "https://attacker.example/steal"}
-    headers = {"X-Code-Atlas-Local": "1"}
+    headers = {"X-Codandy-Local": "1"}
     assert client.post("/api/analyses/assistant/login", headers=headers).status_code == 503
     bridge.rpc = lambda *_: {"authUrl": "https://auth.openai.com/oauth/authorize?state=example"}
     assert client.post("/api/analyses/assistant/login", headers=headers).json()["url"].startswith("https://auth.openai.com/")
@@ -117,6 +117,6 @@ def test_login_accepts_only_official_openai_signin(assistant_client):
 def test_question_rejects_arbitrary_context_and_blank_input(assistant_client):
     client, _, _, job_id = assistant_client
     data = {"analysis_id": str(job_id), "question": " ", "model": "test-model", "effort": "low"}
-    headers = {"X-Code-Atlas-Local": "1"}
+    headers = {"X-Codandy-Local": "1"}
     assert client.post("/api/analyses/assistant/ask", headers=headers, json=data).status_code == 422
     assert client.post("/api/analyses/assistant/ask", headers=headers, json={**data, "question": "Explain", "source": "untrusted extra"}).status_code == 422

@@ -1,4 +1,4 @@
-# Code Atlas progress
+# Codandy progress
 
 ## 2026-09-12 - Handoff audit and M2 continuation
 
@@ -31,7 +31,7 @@ Update this log after each completed implementation slice and before stopping. R
 - Final verification: 41 backend tests passed; Ruff passed; 5 frontend/Python/proxy contract tests passed; TypeScript passed; production build passed, including the hosted API route. Direct ESLint check of changed TS/TSX files passed. The pnpm ESLint wrapper intermittently failed to locate its executable, so the installed ESLint JS entrypoint was used successfully.
 - Updated PLAN.md, ARCHITECTURE.md, AGENTS.md, and README.md for the connected data flow, process boundary, local setup, hosted API requirement, and remaining work.
 - No hosted publication was made: the Python backend currently runs locally, and no hosted backend endpoint has been configured for the connected experience. The existing hosted sample remains unchanged.
-- Resume with browser QA when available, then a hosted Python service and CODE_ATLAS_API_URL wiring if remote access is wanted. Broader parser fixtures/project association and grounded M2 rules follow. No AI enrichment has been added.
+- Resume with browser QA when available, then a hosted Python service and CODANDY_API_URL wiring if remote access is wanted. Broader parser fixtures/project association and grounded M2 rules follow. No AI enrichment has been added.
 - Commands: from root run `corepack pnpm test:contracts`, `corepack pnpm exec tsc --noEmit`, and `corepack pnpm build`; from backend run `.venv-managed/Scripts/python.exe -m pytest -q`, `.venv-managed/Scripts/python.exe -m ruff check .`, and opt-in `.venv-managed/Scripts/python.exe smoke.py` (requires GitHub network access).
 - During server teardown, Vite logs revealed clone-local tsconfig files triggered frontend reloads. Excluded backend/workspaces/tool directories from Vite watching and TypeScript scanning. Temporary smoke-test directories were cleaned up and test servers stopped.
 
@@ -187,7 +187,7 @@ separate because the consolidation was explicitly declined.
 ## 2026-09-13 - Local completed-report retention
 
 - Published snapshot comparison and dependency impact to GitHub main as d402d92 after successful build, TypeScript, ESLint and 11 frontend contracts.
-- Added opt-in CODE_ATLAS_REPORT_ROOT local persistence. Complete atlas/source/event snapshots are validated and written via fsynced temporary file plus atomic replace, capped at 128 MB each. Startup restores valid completed snapshots and applies max_jobs retention; incomplete jobs are not resumed. Single process per directory only.
+- Added opt-in CODANDY_REPORT_ROOT local persistence. Complete atlas/source/event snapshots are validated and written via fsynced temporary file plus atomic replace, capped at 128 MB each. Startup restores valid completed snapshots and applies max_jobs retention; incomplete jobs are not resumed. Single process per directory only.
 - Added GET /api/analyses recent-report metadata and intake Recent reports/reopen flow. Reopened jobs preserve source access. In-memory behavior remains the default.
 - Added restart/source/SSE integration, corruption/path mismatch, retention, atomic-failure preservation and recent-report schema coverage. Backend suite: 86 passed. No Dockerfile edits; .reports is excluded from Git/container context. Browser QA remains unavailable.
 - Next: final frontend contracts/build, scratch cleanup and publication. Shared persistence/access controls, repository uploads, Codex and debugging remain unfinished.
@@ -197,7 +197,7 @@ separate because the consolidation was explicitly declined.
 ## 2026-09-13 - User-selectable brand color schemes
 
 - Published opt-in local retention and recent-report reopening as ca4327d.
-- User requested Forbright and Tennessee themes with the current scheme preserved as default. Added Atlas Midnight (default), Forbright, Vol Orange, Violet Night and Graphite. Shared theme picker appears in intake, sample report and live report; next-themes persists the device preference using code-atlas-theme and sets data-theme before paint. Picker hydrates with a stable default value.
+- User requested Forbright and Tennessee themes with the current scheme preserved as default. Added Codandy Midnight (default), Forbright, Vol Orange, Violet Night and Graphite. Shared theme picker appears in intake, sample report and live report; next-themes persists the device preference using codandy-theme and sets data-theme before paint. Picker hydrates with a stable default value.
 - Converted hardcoded report backgrounds to shared surface variables while retaining default shades. Brand accents, gradients, focus rings, panels and sidebar adapt consistently; status/risk colors remain semantic.
 - Forbright primary references verified from https://maintenance.forbrightbank.com/ public inline CSS: navy #18272d, green #41ac3a, supporting green #33812d. Theme adapts dark supporting surfaces for legibility; it does not claim bank affiliation or reproduce a full proprietary brand guide. UT official palette: https://brand.utk.edu/standards/colors/ orange #ff8200, white and Smokey #4b4b4b, with darker supporting surfaces for this app.
 - Initial build, TypeScript and focused ESLint passed. Contrast spot-check prompted darkening the Forbright card surface to improve small green labels. Final checks and publication follow. Browser visual QA remains unavailable in this session.
@@ -206,7 +206,7 @@ separate because the consolidation was explicitly declined.
 
 ## 2026-09-13 - Retained-report removal and final publication checkpoint
 
-- Published the five-theme picker as cde0966. Original Atlas Midnight remains default; Forbright, Vol Orange, Violet Night and Graphite preferences persist per device.
+- Published the five-theme picker as cde0966. Original Codandy Midnight remains default; Forbright, Vol Orange, Violet Night and Graphite preferences persist per device.
 - Added confirmed removal in Recent reports and DELETE /api/analyses/{id}, including hosted proxy forwarding. Active jobs return 409. Snapshot deletion precedes in-memory removal, and storage failures return a sanitized error without reporting success.
 - Verified removal clears captured sources and survives API restart; active-job refusal and proxy method/body behavior are covered. 87 backend tests and 13 frontend/API tests pass; TypeScript, Ruff and focused ESLint pass. Production build and scratch cleanup follow.
 - Next substantive work: browser interaction/theme/mobile QA when a browser is connected; deeper parser coverage and import/flow precision; repository upload inputs; AI provider adapter and grounded Q&A. Multi-user hosted deployment remains blocked on access control/shared state and the explicitly deferred Dockerfile. Local snapshots do not solve distributed state.
@@ -267,7 +267,7 @@ separate because the consolidation was explicitly declined.
 
 - Started from 8a69274. User requested clickable Source files, Symbols, API routes and Tests cards, plus more AI question entry points. No account quota readout is available to confirm remaining Astra usage.
 - Both sample and real overview cards now open searchable, paginated detail sheets with source-inspection actions and explicit route/test coverage limits. The sample lists only supplied examples and identifies its headline counts as illustrative; no missing sample tests or inventory are fabricated.
-- Added a shared Ask Atlas question composer on report pages, inventory drilldowns, report findings, selected source nodes, dependencies and loaded snapshot comparisons. Drafts include scoped graph evidence and reviewable context, suggested questions, clipboard copy and text download. Source bodies are not included; excerpt limits and omitted evidence are disclosed.
+- Added a shared Ask Codandy question composer on report pages, inventory drilldowns, report findings, selected source nodes, dependencies and loaded snapshot comparisons. Drafts include scoped graph evidence and reviewable context, suggested questions, clipboard copy and text download. Source bodies are not included; excerpt limits and omitted evidence are disclosed.
 - Removed sample canned AI answers. Live in-app model responses remain unimplemented: no provider is configured and no Codex executable was discoverable on PATH. Asked user which connection to target; until selected/configured the composer explicitly prepares questions for another assistant and never sends data automatically.
 - Verification: 20 frontend/API tests, TypeScript, changed-file ESLint and production build pass. Backend unchanged from its 125-test checkpoint. Browser inventory is empty, so interaction/mobile visual QA remains outstanding.
 - Stop/resume: finalize publication of this UI slice. Next required AI work is provider selection/configuration and a bounded backend adapter with validated citations; do not claim question export is an integrated model conversation.
@@ -292,5 +292,12 @@ separate because the consolidation was explicitly declined.
 ## 2026-09-13 - Fresh-history repository preparation
 
 - Preserved a verified source-only backup and copied all 170 tracked files into a new independent repository. Application code is unchanged; this progress entry is the only content addition. No original Git objects, local credentials, reports or generated files were copied.
-- Publish the fresh root commit to abwalls/code-atlas-clean using only the verified GitHub no-reply identity. Keep abwalls/code-atlas intact until the user reviews the new repository and explicitly authorizes final deletion.
+- Publish the fresh root commit to abwalls/codandy using only the verified GitHub no-reply identity. Keep abwalls/codandy intact until the user reviews the new repository and explicitly authorizes final deletion.
 - Next: verify the published root commit and source parity, then review old-commit availability and final repository naming with the user. Do not merge or push old history into this repository.
+
+## 2026-09-13 - Codandy rename
+
+- Renamed product branding, PWA metadata, frontend/backend packages, workspace and assistant components, repository URLs, generated review labels, artifact directory and configuration names to Codandy/codandy. The graph schema and analysis behavior remain unchanged. Legacy environment variables and local assistant headers remain accepted; the browser theme storage key remains stable to retain user preferences.
+- Working only from the fresh personal-account history. GitHub repository target: abwalls/codandy. Intended active local checkout: C:/Users/andre/source/repos/codandy. The old local folder is a backup; never merge or publish its Git history.
+- Fresh-clone validation uncovered the Vite helper in ignored build/ was absent from published source. Included the existing helper and its MIT license under scripts/ and updated the import, making clean-clone builds reproducible.
+- Validation: 134 backend tests, 23 frontend/API tests, TypeScript, ESLint, Ruff and production build pass. New settings tests verify legacy environment/.env compatibility and precedence of new names. Remaining final checks: local service restart with retained reports/auth, repository publication and hosted preview rename.

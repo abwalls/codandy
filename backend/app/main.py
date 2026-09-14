@@ -23,7 +23,7 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="Code Atlas API",
+    title="Codandy API",
     version="0.1.0",
     description="Static repository analysis and grounded codebase exploration.",
     lifespan=lifespan,

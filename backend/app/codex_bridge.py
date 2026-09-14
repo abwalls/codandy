@@ -36,7 +36,7 @@ class CodexBridge:
             return
         binary = self.executable or shutil.which("codex")
         if not binary or not Path(binary).is_file():
-            raise CodexUnavailable("Codex runtime not found. Set CODE_ATLAS_CODEX_EXECUTABLE to the installed Codex executable.")
+            raise CodexUnavailable("Codex runtime not found. Set CODANDY_CODEX_EXECUTABLE to the installed Codex executable.")
         self.home.mkdir(parents=True, exist_ok=True)
         cwd = self.home / "context"
         cwd.mkdir(exist_ok=True)
@@ -70,7 +70,7 @@ class CodexBridge:
                     process.terminate()
 
         threading.Thread(target=reader, daemon=True).start()
-        self.rpc("initialize", {"clientInfo": {"name": "code_atlas", "title": "Code Atlas", "version": "0.1.0"}})
+        self.rpc("initialize", {"clientInfo": {"name": "codandy", "title": "Codandy", "version": "0.1.0"}})
         self.send({"method": "initialized", "params": {}})
 
     def send(self, message):
@@ -92,7 +92,7 @@ class CodexBridge:
                 continue
             if "method" in message and "id" in message:
                 # No permission, tool, or external-auth requests are accepted by this client.
-                self.send({"id": message["id"], "error": {"code": -32601, "message": "Unsupported by read-only Atlas client"}})
+                self.send({"id": message["id"], "error": {"code": -32601, "message": "Unsupported by read-only Codandy client"}})
                 continue
             return message
         raise CodexUnavailable("Codex request timed out. Try again or choose lower reasoning effort.")

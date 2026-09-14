@@ -1,7 +1,7 @@
 // Hosted deployments must configure the external Python service's origin.
 // Local development uses the Vite proxy to port 8000.
 async function proxy(request: Request) {
-  const origin = process.env.CODE_ATLAS_API_URL;
+  const origin = process.env.CODANDY_API_URL || process.env.CODE_ATLAS_API_URL;
   if (!origin) return Response.json({ detail: "The analysis backend is not configured for this deployment." }, { status: 503 });
   const incoming = new URL(request.url);
   const path = incoming.pathname;

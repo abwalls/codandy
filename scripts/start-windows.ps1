@@ -14,10 +14,10 @@ if (-not (Test-Path -LiteralPath $BackendPython)) {
 $BackendCommand = "Set-Location '$BackendRoot'; & '$BackendPython' -m uvicorn app.main:app --reload --port 8000"
 $FrontendCommand = "Set-Location '$ProjectRoot'; corepack pnpm dev"
 
-Write-Host "Starting Code Atlas backend at http://localhost:8000" -ForegroundColor Cyan
+Write-Host "Starting Codandy backend at http://localhost:8000" -ForegroundColor Cyan
 Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", $BackendCommand
 
-Write-Host "Starting Code Atlas frontend at http://localhost:5173" -ForegroundColor Cyan
+Write-Host "Starting Codandy frontend at http://localhost:5173" -ForegroundColor Cyan
 Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoExit", "-Command", $FrontendCommand
 
 Start-Sleep -Seconds 3

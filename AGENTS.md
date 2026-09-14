@@ -1,8 +1,8 @@
-# Code Atlas agent guide
+# Codandy agent guide
 
 ## Product
 
-Code Atlas turns an unfamiliar repository into an interactive, evidence-backed model of the software. The deterministic code graph is the source of truth. AI explains and investigates the graph but must not invent relationships or findings.
+Codandy turns an unfamiliar repository into an interactive, evidence-backed model of the software. The deterministic code graph is the source of truth. AI explains and investigates the graph but must not invent relationships or findings.
 
 ## Current state
 
@@ -14,7 +14,7 @@ Code Atlas turns an unfamiliar repository into an interactive, evidence-backed m
 - Opt-in local completed-report snapshots, recent-report reopening/removal, offline atlas imports, snapshot comparison, dependency impact, and five device-persisted color themes are implemented. Shared multi-user persistence/auth, Codex Q&A, hosted Python service and deeper semantic inference remain unfinished. Sample mode remains illustrative and labeled.
 - Dependencies provides direct manifest/version evidence, supported npm/NuGet lockfile metadata, scoped usage candidates, and explicit public registry/OSV checks. Public observations are separate from atlas facts; an identified version does not establish runtime exposure. Unsupported or ambiguous constraints remain unknown. The green/navy preset is labeled Demo background.
 - Dependency reviews can be filtered and exported with separate public observations. .NET project references feed Architecture and project-dependent impact inspection. Nearest central NuGet declarations are inspectable candidates only; MSBuild is never evaluated.
-- Ask Atlas has contextual copy/export plus an opt-in local Codex App Server subscription adapter. Authentication stays in a dedicated ignored Codex profile; no token copying or API-key fallback. Loopback/header/origin checks guard local endpoints, which are not exposed by the hosted proxy. Model/effort choices are discovered; answers validate schema and citation IDs. Authenticated Plus-plan completion through the localhost frontend proxy is verified. Questions are independent; streaming/history and visual browser QA remain outstanding.
+- Ask Codandy has contextual copy/export plus an opt-in local Codex App Server subscription adapter. Authentication stays in a dedicated ignored Codex profile; no token copying or API-key fallback. Loopback/header/origin checks guard local endpoints, which are not exposed by the hosted proxy. Model/effort choices are discovered; answers validate schema and citation IDs. Authenticated Plus-plan completion through the localhost frontend proxy is verified. Questions are independent; streaming/history and visual browser QA remain outstanding.
 
 Read `PLAN.md` and `ARCHITECTURE.md` before changing product architecture.
 
@@ -26,7 +26,7 @@ Implement a real end-to-end analysis for public GitHub repositories:
 2. Enforce repository size, file-count, depth, and timeout limits.
 3. Detect projects and technologies from manifests and source extensions.
 4. Extract basic files, declarations, imports, API routes, and tests for C# and TypeScript/React.
-5. Emit a schema-validated `.codeatlas/atlas.json` with stable node IDs, relationships, source locations, evidence, and confidence.
+5. Emit a schema-validated `.codandy/atlas.json` with stable node IDs, relationships, source locations, evidence, and confidence.
 6. Stream real job progress from FastAPI to React using Server-Sent Events.
 7. Populate report sections from the returned atlas; show unsupported or not-detected states instead of fabricated content.
 
@@ -48,7 +48,7 @@ Do not add Codex-powered enrichment until deterministic ingestion and atlas gene
 - Backend: Python 3.12, FastAPI, Pydantic.
 - Analysis: Tree-sitter grammars for C#, TypeScript/TSX, JavaScript/JSX, Python and Go, with later Roslyn and TypeScript Compiler API adapters.
 - `tree-sitter` is pinned below 0.26. Release 0.26.0 corrupts process memory when a walk reads a node's `start_point`/`end_point` and then its `named_children`, which is exactly what the analyzer does for every declaration. `backend/tests/test_grammars.py` guards the verified range.
-- Canonical artifact: `.codeatlas/atlas.json`.
+- Canonical artifact: `.codandy/atlas.json`.
 
 ## Commands
 
@@ -74,6 +74,8 @@ uv run uvicorn app.main:app --reload --port 8000
 Use `scripts\setup-windows.ps1` for first-time setup and `scripts\start-windows.ps1` to launch both services.
 
 ## Working rules
+
+- User identity requirement: use only the personal GitHub account `abwalls` for this project, never the former work account. Verify `gh api user` returns `abwalls` before GitHub mutations. The approved repository is `abwalls/codandy`; use `45399949+abwalls@users.noreply.github.com` for both author and committer. Never merge the old repository history. Stop if authentication or commit attribution differs.
 
 - Read progress.md when resuming and append a checkpoint after each completed slice and before stopping.
 - Preserve the existing visual direction and responsive layouts.

@@ -25,7 +25,7 @@ from app.models import AtlasDocument, AtlasNode, AtlasRelationship, Evidence
 from app.reporting import generate_report
 from app.settings import Settings
 
-EXCLUDED_DIRS = {".git", ".codeatlas", "node_modules", "bin", "obj", "dist", "build",
+EXCLUDED_DIRS = {".git", ".codandy", ".codeatlas", "node_modules", "bin", "obj", "dist", "build",
                  ".venv", "vendor", ".next", ".ssh", ".aws", ".azure"}
 SECRET_NAME = re.compile(
     r"(^\.env|^id_(rsa|ed25519|ecdsa)|credential|secret|^\.npmrc$|^\.pypirc$|"
