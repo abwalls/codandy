@@ -350,3 +350,10 @@ separate because the consolidation was explicitly declined.
 - Restarted only Codandy's backend (wrapper PID 4188), preserving report storage. Verified HTTP 200 on http://localhost:5173/debugging and a synthetic JSON import through the frontend proxy returning two sanitized exception records. Sentry status correctly reports not configured. No live provider request was made.
 - Browser automation returned no available browser surfaces; visual interaction QA remains unverified. The local frontend stays running for user testing. Hosted UI remains a local-workflow entry point, not a hosted telemetry connector.
 - Next: configure a user-owned event:read token in ignored backend/.env to validate a real event; then project/issue selection, revision-aware source binding and durable cases. Do not mark D1 complete or claim live verification. Current slice is ready for personal-account GitHub and owner-private Sites publication.
+
+
+### 2026-09-14 - Sentry slice published
+
+- Published implementation commit 574eae4 to abwalls/codandy; author and committer both use the approved abwalls GitHub no-reply identity. Tracked source contains no former-company text.
+- Owner-private Sites version 4 deployed successfully from that implementation commit at https://codandy.abwalls.chatgpt.site (deployment appgdep_6aa81c86f45481919956df6956561f38). Local testing entry: http://localhost:5173/debugging; backend remains running on 8000. This final log-only checkpoint does not change the deployed runtime.
+- Sentry credentials and a real account verification remain outstanding; all delivered provider tests use synthetic responses. Continue with the remaining D1 items listed above.
