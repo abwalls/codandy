@@ -1,90 +1,83 @@
 # Codandy architecture
 
-## Local subscription assistant
+## Current implementation and proposed extension
 
-Opt-in `CODANDY_CODEX_ENABLED` starts an installed Codex App Server over private stdio. A dedicated ignored `CODANDY_CODEX_HOME` stores Codex-managed sign-in state; Codandy never reads or copies the normal Codex profile's auth tokens. Browser OAuth is initiated through `account/login/start`, and only an official auth.openai.com URL is returned. `account/read` must report ChatGPT authentication; no API-key fallback is offered.
+The current React/Vinext UI talks to a local FastAPI service for bounded static analysis, retained source and reports. The debugging pivot adds a separate investigation domain; it does not replace static ingestion or authorize running analyzed repositories. New components described below are planned unless explicitly marked current.
 
-The local `/api/analyses/assistant/*` routes require a loopback peer/host, a custom client header, and an approved local Origin when present. The hosted proxy does not forward them. This is a single-user local integration, not shared-server subscription pooling or hosted end-user authentication.
-
-Model and reasoning choices come from `model/list` and are checked again on submission. Questions use retained backend atlas nodes, at most 24 nodes and 40 internal relationships in a 64 KB prompt. Source bodies and arbitrary client context are not accepted. Codex runs in an isolated empty context directory with read-only permissions, tools/features disabled, and no user-profile MCP/plugin configuration. Permission requests are refused. Responses are schema-validated and cited IDs must belong to the supplied excerpt; this does not prove every generated claim. Each question uses an ephemeral thread with a bounded response timeout.
-
-## Source of truth
-
-Every analysis produces a versioned `.codandy/atlas.json`. UI pages and AI tools query this artifact instead of relying on free-form model memory.
-
-## Universal graph
-
-Initial node types include repository, project, directory, file, namespace, class, interface, method, route, component, database entity, queue, and external service.
-
-Initial edge types include `CONTAINS`, `IMPORTS`, `CALLS`, `IMPLEMENTS`, `INHERITS`, `DEPENDS_ON`, `ROUTES_TO`, `READS`, `WRITES`, `PUBLISHES`, `CONSUMES`, `RENDERS`, and `TESTS`.
-
-Stable identities use deterministic names such as:
-
-```text
-method:csharp:Northstar.Auth.LoginHandler.Handle
-route:http:POST:/api/auth/login
-component:typescript:client/src/features/auth/LoginForm
+```mermaid
+flowchart LR
+  R[Repository snapshot] --> A[Static analyzer: current]
+  A --> G[Atlas 0.2 and captured source]
+  S[Sentry read API or imported artifact] --> N[Bounded normalization and redaction: planned]
+  N --> O[Immutable sanitized observations]
+  G --> B[Revision-aware binding records]
+  O --> B
+  B --> I[Saved investigation]
+  I --> V[Stack / source / performance views]
+  I --> W[Whiteboard and user plans]
+  I --> Q[Reviewed evidence packet]
+  W --> Q
+  Q --> C[Local Codex or exported IDE brief]
 ```
 
-## Pipeline
+## Preserve the static boundary
 
-```text
-Repository input
-  -> safe ingestion
-  -> project detection
-  -> language analyzers
-  -> universal code graph
-  -> evidence rules
-  -> AI enrichment
-  -> atlas.json
-  -> interactive report
-```
+Current artifact: `.codandy/atlas.json`, schema 0.2. No graph.json migration is needed. The actual relationship enum is CONTAINS, IMPORTS, RESOLVES_TO, DEPENDS_ON, ROUTES_TO and CALLS. Some relationships are inferred or unresolved. READS, WRITES, PUBLISHES, TESTS and similar semantic relationships are future work, not available merely because earlier architecture documents listed them.
 
-## Analyzer boundary
+Node IDs derive from kind, path and name. They are deterministic for those inputs, not stable through every move/rename. Runtime references use `(snapshot_id, node_id)` plus repository/revision metadata. New observations never mutate the atlas, silently resolve static edges or upgrade rule confidence.
 
-The Python API coordinates a registry of analyzers. Tree-sitter provides broad syntax coverage for C#, TypeScript/TSX, JavaScript/JSX, Python and Go; grammars load lazily per repository. Deeper semantic analyzers run as separate adapters, including a future Roslyn CLI for .NET and TypeScript Compiler API worker for React/TypeScript.
+Git ingestion remains isolated and bounded. Codandy's analyzer process can run its own parser, never repository builds, hooks, scripts, tests, package managers or plugins. Secret/binary/excluded paths remain inaccessible. Tree-sitter remains pinned below 0.26 because of the documented native-memory regression.
 
-The `tree-sitter` core is pinned below 0.26 because 0.26.0 corrupts memory during the point-then-children node walk the analyzer performs, segfaulting the parser process on ordinary sources.
+The current source viewer addresses only captured indexed paths; atlas files do not embed source bodies. Retained sources have per-file/total budgets and expire with their report unless explicitly retained by a future investigation policy.
 
-The analyzer runs in a spawned disposable process. The parent
-forwards progress over SSE, validates the returned artifact, and terminates the process
-on deadline or failure. Native parser crashes are contained within that process.
-This process executes Codandy's own static analyzer only, never repository tooling.
+## Proposed investigation contracts
 
-## Source viewer boundary
+| Record | Required basis |
+|---|---|
+| Connection | Provider, approved host/region, selected organization/project, capability status, opaque credential reference |
+| Observation | Schema version, provider/event identity, occurred/fetched timestamps, environment/release, sanitized payload, redaction/truncation metadata |
+| Frame | Provider frame index/order, exception/thread identity, optional function/path/line/column; absent values stay absent |
+| Source binding | Observation/frame reference, snapshot/revision, candidate nodes, method and exact/candidate/ambiguous/unmapped status |
+| Investigation | Case ID, title/state, pinned observation IDs and snapshot references, notes, hypothesis versions and verification references |
+| Claim | observed/static-inferred/hypothesis/user-plan basis, evidence IDs, limitations, status; no model-created factual confidence score |
+| Board | Versioned scene, text/intent, evidence-card references, proposed tasks, attachment references and export metadata |
 
-`atlas.json` stays a graph document and never embeds source bodies. So that evidence
-remains readable after the disposable workspace is destroyed, the API captures the text of
-indexed files while the clone still exists, within per-file and total byte budgets, and
-serves it from `GET /analyses/{id}/source?path=...`.
+Observations are immutable after normalization; refreshing provider data creates another version. User annotations and hypothesis states are mutable, with history. "Append-only" does not mean forever retained: explicit deletion and retention policies must remove cases, observations, board assets and unused source snapshots consistently.
 
-Only paths the analyzer already indexed as file nodes are addressable, so the endpoint is a
-map lookup with no request-time disk access, and secret-matched, binary and excluded paths
-are unreachable. Retained text is evicted with its report, so a downloaded atlas carries
-the graph while the viewer needs the live service.
+Keep each schema version separate. Validate server/client contracts with Pydantic/Zod and reject dangling evidence IDs. A provider event without a source match remains a valid investigation. Missing revision evidence must remain visible even if the displayed source looks plausible.
 
-## Frontend data boundary
+## Provider boundary
 
-React validates job events and artifacts with Zod contracts in lib/analysis-api.ts.
-Real reports consume the backend schema directly; the illustrative banking atlas is a
-separate sample model. EventSource reconnects using event IDs, with status polling to
-recover missed terminal events and detect expired jobs or API restarts.
+Start with Sentry Cloud and offline fixtures, pending account selection. FastAPI makes bounded authenticated GET requests to a configured allowed host. Accept IDs/validated issue references, never arbitrary request URLs. Scope every lookup/cache key to the connection and organization/project. Do not let pagination links or redirects forward credentials to another host.
 
-Local Vite development proxies /api/analyses to FastAPI on port 8000. Hosted builds
-forward those routes to the HTTPS origin configured by CODANDY_API_URL. The Python
-service needs separate hosting; the Sites Worker cannot run Git or native Python parsing.
+Initial authentication is a protected local-only settings operation using a backend-held read token. Return connection metadata, never secrets. Hosted/multi-user authentication and self-hosted endpoint support need separate designs. A frontend SDK DSN is not a general Sentry read token, and a Codex login grants no Sentry access.
 
-## Future debugging boundary
+Use deadline, byte/depth limits, bounded retries, cancellation and rate-limit-aware backoff. Do not launch background whole-organization polling. Webhooks require verified signatures and a durable public receiver later; the local Codex endpoint must never become that receiver. See [research](docs/DEBUGGING-STRATEGY.md) for endpoint and scope sources.
 
-Runtime observations remain separate from static facts and attach through stable node IDs. A debugging finding records affected nodes, severity, evidence, hypotheses, and recommended solutions without mutating the base atlas.
+## Local persistence
 
+Current report persistence uses atomic, bounded JSON snapshots via CODANDY_REPORT_ROOT, with one owning API process. Preserve it. Proposed investigations use a separate local SQLite store plus bounded attachment storage; finalize schema/migration tests in D1 before implementation. This supports transactions and case/evidence indexing without claiming shared-worker readiness.
 
-## Local report snapshots
+An investigation must either pin a source snapshot or explicitly show expired/unavailable source. Report deletion must report referenced-case consequences; no silent cascade or dangling exact-source claim. Restore is schema-validated. Store sanitized evidence by default, not wholesale provider event bodies. Define local retention and explicit case deletion before supporting live import.
 
-Optional `CODANDY_REPORT_ROOT` stores completed job/atlas/source/event snapshots under generated job UUID filenames. Writes use a same-directory temporary file, flush/fsync and atomic replacement before publishing completion. Restart restores validated complete jobs; interrupted jobs are not resumed. Retention follows max_jobs with a 128 MB per-snapshot cap. Source endpoints remain map lookups after restoration, never arbitrary request-time file reads. A failed save fails the job explicitly.
+## AI and plans
 
-This directory must be owned by one API process. It adds local durability only; distributed job coordination, authentication, shared storage, and hosted deployment are still future work. GET /api/analyses returns retained completed-report metadata plus whether local persistence is enabled.
+Current AI uses an isolated Codex-managed profile, ChatGPT authentication and tool-disabled ephemeral threads. Current answers validate schema and supplied graph citation IDs; they do not establish factual correctness. Preserve the local-only host/header/origin checks and lack of API-key fallback.
 
-## Dependency metadata boundary
+Extend the reviewable context builder to typed investigation evidence only after normalization and case authorization. Observed data, static candidates, user notes and hypotheses remain separate in prompts and output. Source snippets/telemetry require explicit review, a bounded allowlist and redaction. Unknown evidence IDs invalidate a response; valid IDs alone do not prove a diagnosis. Never automatically send everything visible on a board.
 
-Dependency nodes carry sanitized version attributes and optional lockfile evidence. No package manager runs. POST /api/analyses/{id}/dependencies?node_id=... looks up an existing dependency node only; clients cannot supply provider URLs or substitute package names. Explicit checks use bounded HTTPS requests to fixed public registry hosts and OSV. Live advisory/update observations stay separate from deterministic atlas facts and are labeled with timestamps, version basis, unknown/incomplete states and runtime limitations.
+A whiteboard owns plans and annotations, not graph facts. Export text/evidence first; current AI requests do not support arbitrary board-image reasoning. A future read-only MCP server wraps the same case services. Enabling external provider tools inside Codex is not part of this pivot's initial implementation.
+
+## Performance and trusted execution
+
+Stack snapshots, trace spans, profiles and live debugger state are distinct observation types. Do not infer time from stack order or source length. Keep timing units, sample basis, environment, observation window and missing-data state with every metric. Bind spans to code only with suitable attributes or explicit mappings.
+
+A later DAP service must be a separate opt-in execution boundary for a selected trusted local workspace/adapter. It may not reuse the untrusted clone worker or accept launch/evaluate commands from telemetry, board imports or automatic AI output. Importing externally generated test/profile artifacts does not run them.
+
+## Deployment and compatibility
+
+Local services remain on localhost:5173 and 127.0.0.1:8000. The active checkout is C:/Users/andre/source/repos/codandy; the archived code-atlas checkout must never contribute Git history. Use only abwalls and the configured GitHub no-reply identity.
+
+Hosted Sites can serve the UI/sample but cannot execute the Python/Git/native parser. Its assistant routes remain intentionally unavailable. Real hosted investigation data requires a separately secured backend, tenant/connection authorization and secret storage. Do not imply the private preview now has a Sentry integration.
+
+CODANDY_* settings are canonical; legacy settings/header aliases and the browser theme storage key remain supported. Existing atlas/report imports remain compatible. This documentation change adds no runtime migrations, integrations or new UI behavior.

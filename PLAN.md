@@ -1,116 +1,97 @@
-# Codandy delivery plan
+# Codandy product and delivery plan
 
-## Product goal
+## Direction
 
-Codandy turns an unfamiliar repository into an interactive, evidence-backed mental model. The deterministic code graph is the source of truth; AI investigates and explains that graph without inventing relationships.
+Codandy is becoming a debugging and investigation workspace: bring an error or slow operation, connect it to the relevant source, investigate with evidence, sketch a plan, and hand a reviewable debugging brief to an AI assistant or IDE.
 
-## MVP experience
+The primary workflow is **Connect → Investigate → Understand → Plan → Verify**. Repository analysis supports that workflow. Sentry integration and stack investigation are the immediate priority; generic repository reports and pre-merge risk scoring are no longer the headline roadmap.
 
-1. Connect a ChatGPT/Codex session.
-2. Submit a public GitHub or Git URL, ZIP archive, or project folder.
-3. Stream analysis progress while the repository is parsed statically.
-4. Generate a versioned `atlas.json` tied to branch and commit.
-5. Explore the executive summary, architecture, flows, codebase index, and developer guide.
-6. Select any node to view source evidence and ask a scoped question.
+This plan supersedes the previous milestone ordering and debugging deferral. It does not claim the new features exist. See [ROADMAP.md](ROADMAP.md) for delivery gates, [ARCHITECTURE.md](ARCHITECTURE.md) for boundaries, and [the strategy review](docs/DEBUGGING-STRATEGY.md) for research and assessment of the supplied proposal. The prior plan and status report are retained under docs/archive/ as historical records.
 
-## Architecture
+## Current baseline
 
-- Frontend: React 19, TypeScript, responsive web/PWA interface.
-- API: Python 3.12 with FastAPI and Pydantic.
-- Analysis: analyzer registry with Tree-sitter parsing for C#, TypeScript/TSX, JavaScript/JSX, Python and Go, then native Roslyn and TypeScript analyzers.
-- Graph: language-neutral nodes and typed relationships stored in `atlas.json`.
-- Agent: Codex adapter behind an `AIProvider` interface, operating read-only against the repository workspace.
-- Jobs: asynchronous analysis pipeline with Server-Sent Events for progress.
+Implemented: bounded static GitHub analysis across five language families; file/symbol/source inspection; partial route and local-call inference; dependency inventory and checks; graph-based reports; local report persistence; snapshot comparisons; themes; and independent, evidence-scoped questions through a local Codex subscription connection. The last implementation checkpoint reports 134 backend tests, 23 frontend contracts, type/lint checks and a successful build. Those were not rerun for this documentation-only pivot.
 
-## Milestones
+Not implemented: Sentry authentication or event retrieval, an investigation store, runtime frame binding, trace/profile analysis, live debugger control, whiteboards, private repository intake, and a Codandy MCP server. The hosted frontend remains separate from local Python analysis and subscription AI.
 
-### M0 · Foundation (current)
+## Initial audience and product promise
 
-- Responsive intake and report UI.
-- Interactive sample atlas and node inspection.
-- Shared atlas schema concepts.
-- FastAPI application skeleton and job endpoints.
-- Static-analysis-only security boundary.
+Start with a developer investigating an exception in a TypeScript/React or Python service, with C#/.NET stack support included in the first release gate. Sentry Cloud is the provisional first connector target; confirm account/region before a live integration test. A bounded JSON or pasted-stack import must work without a Sentry account. Other languages remain explicitly unsupported by the stack parser until tested, even when the static analyzer supports them.
 
-### M1 · Real public-repository analysis (delivered)
+Promise: a developer can locate the evidence behind an incident, see what is missing, preserve an investigation, and prepare a useful next action. Do not promise automatic root cause, a replacement IDE, production telemetry collection, or a verified fix without verification evidence.
 
-- Clone public repositories into isolated temporary workspaces.
-- Enforce size, file-count, depth, timeout, and allow/deny limits.
-- Detect project types and languages from manifests.
-- Index directories, files, imports, declarations, routes, and tests.
-- Emit and validate `atlas.json`.
-- Replace demo progress with SSE job events.
+## Navigation and core interaction
 
-### M2 · Grounded report generation (partially delivered)
+| Area | Purpose | Delivery |
+|---|---|---|
+| Investigations | Saved cases, imported errors, recent work and next actions | First landing area when functional |
+| Errors | Sentry issue list and selected event, filtered by project/environment/release | First connector slice |
+| Stack & Source | Ordered exception frames, source pane, binding status and related code | First investigation slice |
+| Performance | Observed spans and imported profiles with explicit measurement basis | After exception workflow |
+| Whiteboard | Free drawing, evidence cards and structured debugging plans | First usable board in v1 |
+| Codebase | Existing overview, symbols, architecture, dependencies and snapshots | Retained supporting tools |
+| Integrations | Sentry connection, project/repository mappings and AI status | First connector slice |
 
-- Architecture evidence rules and confidence scoring.
-- Important-flow discovery and reconstruction.
-- Generated executive summary, conventions, and “where do I change?” guidance.
-- Source viewer with stable symbol IDs and line evidence. **Done.**
-- Recommended Changes report: performance opportunities, refactoring ideas, and potential security risks. Attach real source evidence, priority, effort, recommended approach, and verification steps to each finding. Distinguish unverified risks from confirmed vulnerabilities; never claim a clean security audit from an absence of findings.
+Use one investigation ID across these views. Ask Codandy receives the selected case context, not whichever global report happened to be open. A planned area should not look implemented: add a navigation item only when it opens a useful view, or label its unavailable state clearly.
 
-### M3 · Codex integration
+## D1 — Sentry-to-source investigation: immediate work
 
-- ChatGPT-authenticated Codex session adapter.
-- Read-only scoped investigation tools: symbols, callers, callees, implementations, routes, entities, and source.
-- Node-scoped questions with cited evidence.
-- Verify multi-tenant production policy before a hosted commercial release.
+Deliver a narrow vertical slice with fixtures first, then a real read-only connection.
 
-### M4 · Inputs and persistence
+1. Add versioned observation, stack frame, source-binding and investigation contracts in Python and TypeScript. Keep atlas 0.2 unchanged. Add a synthetic, non-sensitive fixture corpus and validation of size, depth, frame count and truncation.
+2. Implement one normalization path for a supported Sentry REST event JSON and a pasted stack. Preserve exception chains and provider frame ordering; record how each adapter interprets it. Keep SDK payload formats distinct from REST response formats.
+3. Add the read-only Sentry adapter: local connection status, project selection, bounded issue listing, issue detail and explicit event retrieval. Use a backend-held, scoped token; never a DSN as the read credential. No browser localStorage tokens, no credentials in reports or assistant prompts.
+4. Bind frames against a selected, pinned repository snapshot using configured path mappings and file/line evidence. Represent exact, candidate, ambiguous and unmapped results. A release label is not automatically a Git SHA; unknown or mismatched revisions remain visible.
+5. Build Errors → Stack & Source → Save investigation. Opening a frame must use captured/indexed source, never an arbitrary filesystem path from telemetry. Offer Open in Sentry even when binding fails.
+6. Persist sanitized cases independently of expiring analysis jobs. Retain a referenced snapshot explicitly or show that its source has expired. Refreshing an issue creates another observation, not an overwrite of prior evidence.
+7. Connect Ask Codandy and export a debugging brief: observations, relevant source references, hypotheses, missing evidence and verification steps. Explicit review precedes AI submission; existing graph-only requests are not silently expanded to include telemetry.
 
-- ZIP and folder upload.
-- Private GitHub authorization.
-- Saved reports, commit freshness, and incremental re-analysis.
+**Done when:** a real authorized Sentry event can be opened, mapped where evidence allows, saved/reopened after restart, and exported with correct citations. Fixtures cover TS/JS, Python and .NET; missing source maps, duplicate filenames, async/inner exceptions, unavailable source, revision mismatch, bad credentials, 403/404, 429, malformed responses and cancellation. No injected secrets survive into saved cases or AI exports in the test corpus. Fixtures alone do not qualify as a live integration.
 
-### M5 · Debugging overlay
+**Initial engineering bounds (tunable, not provider limits):** 2 MiB per imported event/stack payload, JSON depth 32, 200 frames across a case import, 20 exception records, 200 breadcrumbs, a bounded 50-issue list page, at most three provider GET attempts with deadline/backoff, and a visible result for every omitted/truncated section. Reject decompression expansion above the byte budget. Never crawl an entire organization implicitly.
 
-- Accept issue descriptions, stack traces, logs, Sentry issues, and OpenTelemetry traces.
-- Map runtime frames and spans onto stable atlas node IDs.
-- Highlight affected report sections, probable root causes, evidence, and solution options.
+## D2 — Investigation quality and source access
 
-## Security invariants
+Add evidence-pinned follow-ups, hypothesis status (proposed/contradicted/supported), explicit verification attachments and redaction preview. Prioritize source mapping precision over mapping every frame. Prepare signed fixtures with known source revisions for evaluation; track exact-binding precision, mapping coverage and ambiguous/unmapped rates separately.
 
-- Never execute uploaded repository code during normal analysis.
-- Never run package installation, builds, tests, scripts, binaries, or project-defined tooling by default.
-- Treat repositories as untrusted input and keep workspaces isolated and disposable.
-- Keep Codex access read-only until a future user explicitly authorizes a code-changing workflow.
-- Exclude secrets and sensitive file patterns from model context and generated reports.
+Private repositories are a material adoption dependency: allow imported validated atlas/source bundles first; design trusted local-folder indexing next, with explicit folder selection and all static-analysis exclusions retained. Do not obtain private source by reusing a Sentry token. Git provider OAuth and remote private cloning are later, separately authorized connectors.
 
-## Next implementation slice
+## D3 — Performance investigation
 
-M1 is implemented and M2 is partially implemented. Bounded GitHub cloning, isolated
-parsing for C#, TypeScript/TSX, JavaScript/JSX, Python and Go, validated atlas emission,
-live SSE progress, deterministic grounded reports, and a source viewer are working and
-browser-verified against real TypeScript and Python repositories. Native hangs and crashes
-are contained in a disposable process. Verification includes 75 backend tests and 7
-frontend/API contract tests.
+Start with a bounded imported OTLP JSON trace, then evaluate a supported Sentry trace API on the target account. Render a waterfall with gaps, concurrency and links. Bind spans only where code attributes or explicit service/repository mappings support it. Missing telemetry means unavailable, not zero.
 
-Next steps, in order:
+Add one profile format through an isolated adapter after a compatibility spike. Distinguish span wall time from sampled stack weight and from CPU time. Show units, window, sampling and included population. Compute quantiles only from a suitable event set with sample count disclosed. Never manufacture per-function time from an exception stack or source size. Cross-release comparisons require comparable windows, environments and measurement definitions.
 
-1. Deepen M2 inference. Architecture currently reports manifests and top-level folders
-   rather than boundaries, layers, and external systems, and flows are bounded local
-   traversals rather than reconstructed paths. Do not replace unsupported states with
-   speculative findings.
-2. Before hosted deployment, implement durable shared state, access control and operational limits. Dockerfile repair is explicitly deferred; its current build commands are not valid. Configure CODANDY_API_URL only after a working service exists.
-3. Replace the sample report's remaining placeholder sections with real rendering, and
-   consolidate the sample and live reports onto one navigation shell when the sample
-   scope is explicitly expanded. The real report path already renders all four M2 sections.
-4. Broaden language coverage further (Java, Rust, Ruby, PHP) and add semantic analyzers.
+**Done when:** a seeded slow-operation fixture exposes the expected measured bottleneck, overlapping spans are not double-counted, missing parents remain visible, and the UI describes every metric's provenance. Live provider profile access is a separate capability gate; a product UI screenshot is not an API contract.
 
-M4 partial: validated local atlas import/export and same-repository snapshot comparison are available, without retained source bodies or freshness checks. Opt-in single-process completed-report persistence and recent-report reopening are implemented; shared/server-scale persistence, repository uploads and private Git inputs remain unstarted. M3 has a working local subscription slice (below); M5 debugging overlay remains unstarted.
+## D4 — Whiteboard and AI planning
 
-Review follow-up: dependency inventory is aggregated, cross-folder import cards now cite graph-backed paths, category labels and sample flow ordering are corrected. Backend verification: 81 tests; frontend contracts: 8 tests. Circular-import review cards and cited-node evidence validation are implemented.
+Adopt an embedded Excalidraw spike: freehand, shapes, text, arrows, undo/redo and pan/zoom. Keep a structured board document separate from its rendered image. Add evidence cards pinned to an investigation, frame, node or span; distinguish observed evidence, user annotations, hypotheses and proposed work.
 
-See [progress.md](progress.md) for implementation checkpoints and local verification commands.
+Store boards locally with autosave, explicit delete and lossless JSON export/import. Export selected content as PNG plus a Markdown debugging brief and machine-readable references. A plan brief contains objective, evidence, assumptions, ordered tasks and acceptance criteria. AI-proposed changes to a board require review; drawn arrows never become code-graph relationships automatically.
 
-Report exploration: source inspector now includes direct/transitive local importers; Snapshot comparison shows indexed graph changes with explicit analyzer/behavior limitations.
+**Done when:** a board survives reload, can be exported/reimported, and generates a useful brief without an image-capable model. Bound attachments/scene size; sanitize links and imported markup; do not render untrusted SVG/HTML or auto-fetch remote images. Keyboard-accessible text/evidence editing and a usable small-screen fallback are release requirements. Realtime collaboration, public sharing and image interpretation are later.
 
-Dependencies analyzer: direct package/version evidence, supported npm/NuGet lockfiles, scoped usage candidates, explicit registry update checks and OSV advisory lookups are implemented. Runtime inventories, other locks and full transitive resolution remain unsupported.
+## D5 — Agent and IDE interoperability
 
-M2 architecture now includes literal .NET ProjectReference candidates between indexed manifests, with unresolved declarations and cited graph paths. MSBuild conditions, imports and reference metadata remain unevaluated.
+Expose a small read-only Codandy MCP surface backed by the same validated services: get investigation, get evidence, find symbol, get related code, export brief. Returned content retains provenance and uncertainty. Do not attach a broad Sentry MCP server to the current tool-disabled Codex bridge without a separate permission design. Direct provider API ingestion and agent-facing MCP serve different roles.
 
-Dependency follow-up: exportable review observations, review-state filtering, project-dependent impact traversal, and nearest Directory.Packages.props version candidates are delivered. Central candidates do not imply resolved versions.
+Start IDE integration with reviewed file/line links or exported tasks. A later Debug Adapter Protocol proof of concept must use an explicitly selected trusted local project and adapter. Breakpoints, stepping, variable inspection and evaluation are separate from artifact analysis. No launch, attach, test execution or expression evaluation in the untrusted repository analyzer.
 
-Overview inventory drilldowns and contextual question drafting/export are available in the UI. The local M3 subscription adapter is described below; shared hosted AI integration remains unimplemented.
+## D6 — Optional change verification and team workflows
 
-M3 local slice: an opt-in Codex App Server subscription adapter, OpenAI browser sign-in, discovered model/effort controls, retained-evidence questions, and schema/citation-ID validation are now implemented. Signed-in Plus-plan status and an authenticated answer with valid graph citations are verified through the localhost frontend proxy using Codex 0.154.0. Multi-turn history, streamed answers, source retrieval tools and shared hosted authentication remain future work.
+After investigation usage is demonstrated, add diff-to-symbol mapping, suggested relevant tests and imported coverage/results. Calibrate any impact/risk rubric before presenting numerical risk scores. Static test filenames are not coverage; a migration filename does not prove irreversibility. PR comments, issue mutations and generated fixes require explicit write scope and review.
+
+Webhooks, multi-user storage/auth, hosted workers, multiple providers and collaboration follow measured demand. Before webhooks, design a public HTTPS receiver with signature verification, deduplication, installation lifecycle and durable jobs. Do not expose the localhost assistant to receive external callbacks.
+
+## v1 release boundary
+
+v1 includes D1, the essential persistence/evidence improvements in D2, a bounded trace/performance viewer from D3 and a single-user board/brief flow from D4. It does not require native debugger control, full MCP orchestration, an APM backend, replay recording, calibrated risk scoring or a multi-tenant SaaS. These are independent later gates.
+
+Measure time to locate relevant source and produce a reviewable next step on a labeled incident corpus; successful save/reopen/export; binding errors; unwanted sensitive-data exposure; and whether developers return for a second case. Targets are proposed validation gates, not current performance claims. Set numerical latency/quality budgets from the first representative corpus rather than inventing market statistics.
+
+## First implementation handoff
+
+Next coding slice: D1 contracts, redaction/normalization and TS/Python/.NET fixtures, followed immediately by one read-only Sentry event request and its UI. Suggested modules: backend/app/debugging/{models,normalize,redaction,binding,store}.py; backend/app/integrations/sentry.py; backend/app/routers/investigations.py; lib/investigation-api.ts; components/investigations/. These are proposed paths, not existing modules.
+
+Keep work scoped to this path until the first live issue-to-source flow is demonstrable. Do not begin by adding risk scores, a debugger engine, broad log ingestion or an empty set of sidebar pages.

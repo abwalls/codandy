@@ -313,3 +313,20 @@ separate because the consolidation was explicitly declined.
 
 - Private preview deployment succeeded at https://codandy.abwalls.chatgpt.site. Public source is https://github.com/abwalls/codandy. The hosted frontend/sample remains separate from local Python analysis and subscription AI.
 - Verified the backend after moving its interpreter: codandy-api health and connected Plus status through localhost:5173. The clean history uses only the personal no-reply identity; no former-company matches were found in tracked content.
+
+
+## 2026-09-13 - Debugging-first strategy and roadmap
+
+- Reviewed the private Downloads/NEWPLAN.md proposal, current schemas/analyzer and official Sentry, OpenTelemetry, DAP, Excalidraw and tldraw documentation. Published a cited research artifact at docs/DEBUGGING-STRATEGY.md; did not republish the private proposal or its unverified market statistics.
+- Replaced PLAN.md and ROADMAP.md with Sentry/stack investigation as D1, performance evidence and a first-release whiteboard as follow-on gates, and later MCP/DAP/change verification. Updated ARCHITECTURE.md and AGENTS.md to separate current capabilities from planned records and to supersede the old debugging deferral. Historical plans are labeled under docs/archive/.
+- Important corrections: actual graph has six relationship types, IDs depend on kind/path/name, static tests are not coverage, and exception stacks do not establish function durations or precise null values. Keep atlas 0.2 unchanged; runtime observations, mappings, hypotheses and board plans are separate.
+- This slice changes documentation only. No Sentry credential was requested/read, no live Sentry API connection was tested, and no runtime feature was implemented or redeployed. Previous application checks remain the baseline; document links, diff and personal-account history are checked for this publication.
+- Next implementation: D1 normalization/redaction/contracts and synthetic TS/JS, Python/.NET fixtures, then one read-only live Sentry event-to-source flow with persistence and reviewed AI export. Sentry deployment/account selection remains open; default design is local-first with Cloud support and account-free imports.
+- Directory: all active work is in C:/Users/andre/source/repos/codandy. This conversation still has the archived code-atlas directory as its configured workspace; open Codandy in the client for future sessions. Do not rename/merge the archive or restore its old Git history.
+
+
+### 2026-09-14 - Strategy publication checkpoint
+
+- Resumed the interrupted planning slice, verified the saved drafts and completed the reference inventory. Corrected stale README claims that local AI/persistence were unavailable. Checked local document links, code fences, former-company references and documentation-only diff scope.
+- Planning deliverables are ready for personal-account publication. No runtime code, dependencies, credentials or deployment configuration changed; no application test/build rerun or Sentry live-integration claim is made for this documentation-only slice.
+- Implementation starts with PLAN.md D1a (sanitized event/stack contracts and fixtures), then D1b/D1c (read-only Sentry connection and revision-aware source binding). Account/region remains an implementation-time choice; import fixtures do not depend on it.

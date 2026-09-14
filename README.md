@@ -4,25 +4,33 @@ Formerly Code Atlas. New configuration uses `CODANDY_*`; existing `CODE_ATLAS_*`
 
 Codandy builds an interactive, evidence-backed mental model of an unfamiliar repository. It combines deterministic code analysis with AI investigation so architectural claims, application flows, and explanations remain traceable to source.
 
+## Product direction
+
+Codandy is becoming an error-investigation and debugging workspace, starting with Sentry, source-bound call stacks, observed performance and whiteboards that produce AI-ready plans. This is the next roadmap, not a claim that those features are already implemented. The existing analyzer and local AI connection remain available.
+
+See [PLAN.md](PLAN.md), [ROADMAP.md](ROADMAP.md) and the [research and strategy review](docs/DEBUGGING-STRATEGY.md). The active checkout is `C:\Users\andre\source\repos\codandy`; the older folder is an archive.
+
 ## Current foundation
 
 - Responsive React 19 and TypeScript interface
 - Repository URL and ZIP intake surfaces
 - Visible analysis lifecycle
 - Interactive sample banking atlas
-- Stable graph node identities and source evidence
+- Deterministic graph node identities and source evidence
 - Multi-language syntax indexing: C#, TypeScript/TSX, JavaScript/JSX, Python, Go
 - Source viewer with evidence-range highlighting
 - Context-aware “Ask Codandy” experience
-- Python 3.12 FastAPI backend scaffold
+- Python 3.12 FastAPI analysis backend
 - Private deployable demo
 
 The interface now analyzes public GitHub repositories through FastAPI, displays real streamed
 progress, and opens an evidence-backed file/symbol index with atlas download and a source
 viewer that shows the real code behind each node. Syntax indexing covers C#,
 TypeScript/TSX, JavaScript/JSX, Python and Go. The banking sample remains available
-separately and keeps its placeholder sections until they are implemented. Codex answers and
-persistence are explicitly unavailable for real analyses.
+separately and labels illustrative content. Real analyses support opt-in local report
+persistence and independent questions through the local Codex subscription connection.
+Sentry investigations, runtime performance views and whiteboards are the next roadmap,
+not implemented features.
 
 Native parsing runs in a disposable process with timeout and crash containment. Live GitHub
 analysis, the frontend proxy, and browser interaction have been verified against real

@@ -2,35 +2,24 @@
 
 ## Product
 
-Codandy turns an unfamiliar repository into an interactive, evidence-backed model of the software. The deterministic code graph is the source of truth. AI explains and investigates the graph but must not invent relationships or findings.
+Codandy is pivoting to a debugging and investigation workspace: connect errors and performance evidence to source, preserve investigations, and prepare plans for developers and AI assistants. The current static analyzer remains the supporting foundation. Sentry and stack investigation are the immediate focus, followed by performance evidence and a single-user whiteboard.
+
+Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the latest progress.md checkpoint before changing direction. Historical reviews and the supplied NEWPLAN.md do not override the current roadmap.
 
 ## Current state
 
-- The React UI and sample banking report are functional.
-- The FastAPI backend has bounded GitHub ingestion, syntax analysis for C#, TypeScript/TSX, JavaScript/JSX, Python and Go, atlas generation, in-memory jobs, SSE endpoints, and a source-text endpoint for the viewer, all with regression tests.
-- React submits real jobs, streams progress, and displays atlas counts, searchable nodes, evidence, relationships, and the real source behind each node. Sample mode is a separate labeled path and keeps its placeholder sections until they are implemented.
-- Native parsing runs in a disposable process with a hard timeout. Live GitHub analysis and local frontend proxy/SSE have been verified; see progress.md for details.
-- Real analyses now include deterministic Architecture, Application flows, Developer guide, and Recommended changes sections derived from graph evidence. These are bounded static heuristics, not runtime traces, compiler semantics, profiling, or a security audit; keep their limitations visible.
-- Opt-in local completed-report snapshots, recent-report reopening/removal, offline atlas imports, snapshot comparison, dependency impact, and five device-persisted color themes are implemented. Shared multi-user persistence/auth, Codex Q&A, hosted Python service and deeper semantic inference remain unfinished. Sample mode remains illustrative and labeled.
-- Dependencies provides direct manifest/version evidence, supported npm/NuGet lockfile metadata, scoped usage candidates, and explicit public registry/OSV checks. Public observations are separate from atlas facts; an identified version does not establish runtime exposure. Unsupported or ambiguous constraints remain unknown. The green/navy preset is labeled Demo background.
-- Dependency reviews can be filtered and exported with separate public observations. .NET project references feed Architecture and project-dependent impact inspection. Nearest central NuGet declarations are inspectable candidates only; MSBuild is never evaluated.
-- Ask Codandy has contextual copy/export plus an opt-in local Codex App Server subscription adapter. Authentication stays in a dedicated ignored Codex profile; no token copying or API-key fallback. Loopback/header/origin checks guard local endpoints, which are not exposed by the hosted proxy. Model/effort choices are discovered; answers validate schema and citation IDs. Authenticated Plus-plan completion through the localhost frontend proxy is verified. Questions are independent; streaming/history and visual browser QA remain outstanding.
-
-Read `PLAN.md` and `ARCHITECTURE.md` before changing product architecture.
+- Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. The last implementation validation was 134 backend tests and 23 frontend/API contracts plus type/lint/build checks.
+- Planned, not implemented: Sentry connection/import, persisted investigations, runtime frame binding, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
+- Actual static relationship types: CONTAINS, IMPORTS, RESOLVES_TO, DEPENDS_ON, ROUTES_TO and CALLS. IDs are deterministic from kind/path/name; snapshot identity is required for runtime associations. No comprehensive call graph, coverage or per-function performance claim is supported.
+- The hosted UI/sample remains separate from local Python analysis and subscription AI. Keep samples and unavailable features clearly labeled.
 
 ## Immediate milestone
 
-Implement a real end-to-end analysis for public GitHub repositories:
+D1 in PLAN.md: bounded event/stack contracts, redaction and TS/JS, Python and .NET fixtures; one read-only Sentry event flow; revision-aware frame/source binding; saved investigations; reviewed AI debugging brief export. Start with normalization and fixtures, then make the live connector functional. Do not start with numerical risk scores, broad telemetry ingestion, a debugger engine or empty sidebar pages.
 
-1. Validate and safely clone a public Git URL into an isolated temporary workspace.
-2. Enforce repository size, file-count, depth, and timeout limits.
-3. Detect projects and technologies from manifests and source extensions.
-4. Extract basic files, declarations, imports, API routes, and tests for C# and TypeScript/React.
-5. Emit a schema-validated `.codandy/atlas.json` with stable node IDs, relationships, source locations, evidence, and confidence.
-6. Stream real job progress from FastAPI to React using Server-Sent Events.
-7. Populate report sections from the returned atlas; show unsupported or not-detected states instead of fabricated content.
+Runtime observations, source bindings, AI hypotheses and user plans are distinct. A stack trace does not establish function timing or the precise null operand. No telemetry path can open arbitrary source files. No board arrow becomes a static graph edge automatically. Existing .codandy/atlas.json schema 0.2 remains unchanged for this pivot.
 
-Do not add Codex-powered enrichment until deterministic ingestion and atlas generation work end to end.
+The old blanket debugging deferral is superseded. Running repository code remains prohibited inside static ingestion; future debugger/test execution requires a separately designed, explicitly trusted local execution boundary.
 
 ## Security invariants
 
