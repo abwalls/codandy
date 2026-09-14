@@ -306,5 +306,10 @@ separate because the consolidation was explicitly declined.
 
 - Published the tested rename to the public personal repository https://github.com/abwalls/codandy. Active clean checkout moved to C:/Users/andre/source/repos/codandy; the original code-atlas directory remains only as an archive/tool cache. Never merge its old Git history.
 - Created the new backend environment and recreated Windows pnpm links after the move. Backend and frontend now run from the Codandy folder on ports 8000 and 5173. Verified frontend HTTP 200/Codandy title, two retained reports through the frontend proxy, and connected Plus-plan AI status with the new local header.
-- Dedicated local Codex sign-in and report snapshots were preserved in ignored directories. Runtime uses CODANDY_* settings. The Python interpreter currently resides in the old directory's managed-tool cache; retain that archive until a future interpreter reinstall removes this dependency.
+- Dedicated local Codex sign-in and report snapshots were preserved in ignored directories. Runtime uses CODANDY_* settings. The managed Python interpreter and uv are now installed inside Codandy; the running app no longer depends on the archived project directory.
 - Renamed the existing owner-private Sites preview title/slug to Codandy. Public GitHub publication is complete; the hosted sample/frontend remains separate from the local Python/AI services. Final private preview deployment follows this checkpoint.
+
+### Final publication checkpoint
+
+- Private preview deployment succeeded at https://codandy.abwalls.chatgpt.site. Public source is https://github.com/abwalls/codandy. The hosted frontend/sample remains separate from local Python analysis and subscription AI.
+- Verified the backend after moving its interpreter: codandy-api health and connected Plus status through localhost:5173. The clean history uses only the personal no-reply identity; no former-company matches were found in tracked content.
