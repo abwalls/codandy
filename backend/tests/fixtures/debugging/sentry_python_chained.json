@@ -1,0 +1,91 @@
+{
+  "id": "9f2c1d7a4b3e4f5a8c6d7e8f9a0b1c2d",
+  "eventID": "9f2c1d7a4b3e4f5a8c6d7e8f9a0b1c2d",
+  "groupID": "4501",
+  "projectID": "12",
+  "title": "RepositoryError: lookup failed for user",
+  "message": "",
+  "platform": "python",
+  "dateCreated": "2026-09-10T14:03:22.418000Z",
+  "dateReceived": "2026-09-10T14:03:23.002000Z",
+  "release": {"version": "orders-api@2.4.1", "shortVersion": "2.4.1", "dateCreated": "2026-09-09T08:00:00Z"},
+  "tags": [{"key": "environment", "value": "production"}, {"key": "server_name", "value": "orders-7f9c"}],
+  "user": {"id": "42", "email": "customer@example.com", "ip_address": "203.0.113.10"},
+  "contexts": {"runtime": {"name": "CPython", "version": "3.12.4"}},
+  "sdk": {"name": "sentry.python", "version": "2.19.0"},
+  "errors": [],
+  "entries": [
+    {
+      "type": "exception",
+      "data": {
+        "values": [
+          {
+            "type": "OperationalError",
+            "value": "no such table: users",
+            "module": "sqlite3",
+            "threadId": null,
+            "mechanism": {"type": "chained", "handled": true, "source": "__cause__", "exception_id": 1, "parent_id": 0},
+            "stacktrace": {
+              "frames": [
+                {
+                  "filename": "app/db.py", "absPath": "/home/deploy/orders/app/db.py", "module": "app.db",
+                  "function": "fetch", "lineNo": 12, "colNo": null, "inApp": true,
+                  "context": [[10, "def fetch(sql):"], [11, "    conn = connect()"], [12, "    return conn.execute(sql)"], [13, ""], [14, "# end"]],
+                  "vars": {"sql": "'select * from users'", "conn": "<Connection>"}
+                }
+              ],
+              "framesOmitted": null, "registers": null, "hasSystemFrames": false
+            },
+            "rawStacktrace": null
+          },
+          {
+            "type": "RepositoryError",
+            "value": "lookup failed for customer@example.com (api_key=sk_live_abcdefghijklmnop1234)",
+            "module": "app.errors",
+            "mechanism": {"type": "logging", "handled": false, "exception_id": 0},
+            "stacktrace": {
+              "frames": [
+                {
+                  "filename": "django/core/handlers/base.py",
+                  "absPath": "/usr/lib/python3.12/site-packages/django/core/handlers/base.py",
+                  "module": "django.core.handlers.base", "function": "_get_response", "lineNo": 197, "inApp": false, "context": []
+                },
+                {
+                  "filename": "app/views.py", "absPath": "/home/deploy/orders/app/views.py", "module": "app.views",
+                  "function": "order_detail", "lineNo": 25, "inApp": true, "context": [[25, "    order = fetch(query)"]]
+                },
+                {
+                  "filename": "app/db.py", "absPath": "/home/deploy/orders/app/db.py", "module": "app.db",
+                  "function": "fetch", "lineNo": 14, "inApp": true,
+                  "context": [[14, "        raise RepositoryError(f'lookup failed for {email}') from exc"]]
+                }
+              ],
+              "framesOmitted": [1, 4], "hasSystemFrames": true
+            }
+          }
+        ],
+        "hasSystemFrames": true,
+        "excOmitted": null
+      }
+    },
+    {
+      "type": "breadcrumbs",
+      "data": {
+        "values": [
+          {"type": "http", "timestamp": "2026-09-10T14:03:21.900000Z", "level": "info", "message": null, "category": "httplib",
+           "data": {"url": "https://payments.example.com/v1/charge?token=abc", "status_code": 500}, "event_id": null},
+          {"type": "default", "timestamp": "2026-09-10T14:03:22.100000Z", "level": "warning", "message": "retrying with password=hunter2",
+           "category": "app", "data": null, "event_id": null}
+        ]
+      }
+    },
+    {
+      "type": "request",
+      "data": {
+        "url": "https://orders.example.com/orders/7", "method": "GET",
+        "headers": [["Authorization", "Bearer abcdefghijklmnopqrstu"], ["Cookie", "sessionid=abc"]],
+        "data": {"card": "4111111111111111"}
+      }
+    }
+  ]
+}

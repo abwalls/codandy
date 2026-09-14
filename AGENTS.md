@@ -9,7 +9,8 @@ Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the la
 ## Current state
 
 - Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. The last implementation validation was 134 backend tests and 23 frontend/API contracts plus type/lint/build checks.
-- Planned, not implemented: Sentry connection/import, persisted investigations, runtime frame binding, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
+- Implemented D1 slice: local Sentry REST event/stack imports, sanitized observation viewer/export, and a backend-held read-only Sentry Cloud event connector. Live credentials have not been configured or verified.
+- Planned, not implemented: project/issue browsing, persisted investigations, runtime frame binding, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
 - Actual static relationship types: CONTAINS, IMPORTS, RESOLVES_TO, DEPENDS_ON, ROUTES_TO and CALLS. IDs are deterministic from kind/path/name; snapshot identity is required for runtime associations. No comprehensive call graph, coverage or per-function performance claim is supported.
 - The hosted UI/sample remains separate from local Python analysis and subscription AI. Keep samples and unavailable features clearly labeled.
 

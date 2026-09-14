@@ -1,4 +1,6 @@
-from pydantic import Field
+from typing import Literal
+
+from pydantic import Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     DotEnvSettingsSource,
@@ -23,6 +25,9 @@ class Settings(BaseSettings):
     workspace_root: str = ".workspaces"
     # Opt-in local, single-process persistence for completed reports and captured source.
     report_root: str | None = None
+    sentry_token: SecretStr = SecretStr("")
+    sentry_host: Literal["sentry.io", "us.sentry.io", "de.sentry.io"] = "sentry.io"
+    sentry_organization: str = ""
     codex_enabled: bool = False
     codex_executable: str = ""
     codex_home: str = ".codex-codandy"

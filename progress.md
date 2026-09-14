@@ -330,3 +330,23 @@ separate because the consolidation was explicitly declined.
 - Resumed the interrupted planning slice, verified the saved drafts and completed the reference inventory. Corrected stale README claims that local AI/persistence were unavailable. Checked local document links, code fences, former-company references and documentation-only diff scope.
 - Planning deliverables are ready for personal-account publication. No runtime code, dependencies, credentials or deployment configuration changed; no application test/build rerun or Sentry live-integration claim is made for this documentation-only slice.
 - Implementation starts with PLAN.md D1a (sanitized event/stack contracts and fixtures), then D1b/D1c (read-only Sentry connection and revision-aware source binding). Account/region remains an implementation-time choice; import fixtures do not depend on it.
+
+
+### 2026-09-14 - Sentry implementation resumed
+
+- Reviewed Claude's untracked normalization/contracts and two synthetic fixtures. No connector, API, UI or tests were present. Preserved that foundation; fixing parsing/redaction and adding a local read-only event/import flow. Live credentials have not been supplied or tested.
+
+
+### 2026-09-14 - Sentry import and read-only UI slice
+
+- Preserved Claude's normalizers/contracts and fixed pre-redaction stack clipping, JS cause-frame merging, partial-ID chain inference, quoted secret assignments and short bearer tokens. Reject duplicate JSON keys; restrict provider IDs; retain visible budgets/omissions.
+- Added loopback/header/origin-guarded import/status/retrieval API, backend-held SecretStr Sentry settings, fixed Cloud hosts, no proxy/redirects, 2 MiB response cap, bounded read deadline and one explicit GET per click. Added Errors & stacks page, navigation, source-context/breadcrumb inspection and reviewed sanitized download. No raw telemetry is persisted or sent to AI.
+- Initial validation: 168 backend tests and 23 existing frontend contracts passed; added a Python-to-TypeScript debugging contract and extra transport regressions for final checks. D1 source binding, case persistence, issue browsing and AI brief work remain open. No live account configured/verified.
+
+
+### 2026-09-14 - Sentry validation and handoff checkpoint
+
+- Full backend suite passed 168 tests; the final expanded debugging suite passed all 37 (three additional transport tests). All 24 frontend contracts, TypeScript, changed-file ESLint/Ruff and production build passed. Cross-language test validates actual Python-normalized Sentry data with the frontend schema.
+- Restarted only Codandy's backend (wrapper PID 4188), preserving report storage. Verified HTTP 200 on http://localhost:5173/debugging and a synthetic JSON import through the frontend proxy returning two sanitized exception records. Sentry status correctly reports not configured. No live provider request was made.
+- Browser automation returned no available browser surfaces; visual interaction QA remains unverified. The local frontend stays running for user testing. Hosted UI remains a local-workflow entry point, not a hosted telemetry connector.
+- Next: configure a user-owned event:read token in ignored backend/.env to validate a real event; then project/issue selection, revision-aware source binding and durable cases. Do not mark D1 complete or claim live verification. Current slice is ready for personal-account GitHub and owner-private Sites publication.

@@ -137,3 +137,12 @@ Install Codex, then set `CODANDY_CODEX_ENABLED=true` and `CODANDY_CODEX_EXECUTAB
 Open a retained analysis, choose Ask Codandy, then **Connect ChatGPT → Continue sign-in with OpenAI**. Use the same ChatGPT account you normally use. Return and click **Check connection**. The app selects a default model/effort from the available catalog; you may change either. **Ask using my plan** consumes your account's Codex allowance. Subscription limits and model access still apply; this is not unlimited or guaranteed cheaper for every workload.
 
 This connection is local-only. The hosted proxy does not expose it. Each question starts a fresh conversation and includes a bounded retained graph excerpt, without source bodies, comparison baselines or live advisory results. Generated answers remain AI explanations; citation IDs are validated but factual correctness needs review. Copied/exported questions remain available for sample/offline reports.
+
+
+## Errors and Sentry events
+
+Open `/debugging` locally (or choose **Errors & stacks**) to import a Python, JavaScript or .NET stack, or Sentry REST issue-event JSON. The local backend bounds and sanitizes input; the page displays ordered frames, exception chains, breadcrumbs, omissions and a reviewed JSON download. SDK ingestion payloads are deliberately unsupported. Observations remain in the page, not browser storage; downloaded observations are exports, not yet a reopenable investigation format.
+
+For live reads, set `CODANDY_SENTRY_TOKEN` and `CODANDY_SENTRY_ORGANIZATION` in ignored `backend/.env`, optionally `CODANDY_SENTRY_HOST` (`sentry.io`, `us.sentry.io`, `de.sentry.io`), and restart the backend. Use a token with `event:read` and organization access, not a DSN. Enter the numeric issue ID and `latest`, `oldest`, `recommended` or a specific event ID. Each click performs one bounded GET; no redirects, automatic retries, source-map fetches or provider writes. See [Sentry issue-event API](https://docs.sentry.io/api/events/retrieve-an-issue-event/).
+
+The hosted page describes this local workflow; it does not forward telemetry to a hosted API. Source binding, saved investigations, project/issue browsing and AI debugging briefs remain subsequent D1 work. Live access requires user configuration and has not been verified against a real account.

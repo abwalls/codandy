@@ -95,3 +95,8 @@ Measure time to locate relevant source and produce a reviewable next step on a l
 Next coding slice: D1 contracts, redaction/normalization and TS/Python/.NET fixtures, followed immediately by one read-only Sentry event request and its UI. Suggested modules: backend/app/debugging/{models,normalize,redaction,binding,store}.py; backend/app/integrations/sentry.py; backend/app/routers/investigations.py; lib/investigation-api.ts; components/investigations/. These are proposed paths, not existing modules.
 
 Keep work scoped to this path until the first live issue-to-source flow is demonstrable. Do not begin by adding risk scores, a debugger engine, broad log ingestion or an empty set of sidebar pages.
+
+
+### D1 implementation checkpoint — 2026-09-14
+
+Normalization contracts and synthetic fixtures now support Sentry REST events plus Python, JS and .NET stacks. `/debugging` adds a local import/inspection/redaction-review/export flow and backend-only Sentry Cloud configuration with explicit event retrieval. One GET per request is deliberate (manual retry, bounded deadline), below the three-attempt maximum. No live credential test has occurred. Project/issue browsing, revision-aware bindings, durable investigations and reviewed AI briefs are still pending; D1 is not complete.

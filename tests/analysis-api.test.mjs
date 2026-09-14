@@ -1,3 +1,4 @@
+import { observationSchema } from "../lib/debugging-api.ts";
 import { dependencyUsage } from "../lib/dependency-usage.ts";
 import { connectionSchema, loginSchema, assistantApi } from "../lib/assistant-api.ts";
 import { overviewNodes } from "../lib/overview-details.ts";
@@ -342,4 +343,17 @@ test("project impact follows project edges, skips unresolved links and terminate
   assert.deepEqual(dependencyImpact(graph, "a.csproj", "project").map(entry => [entry.node.id, entry.distance]), [["project:b", 1], ["project:c", 2]]);
   assert.deepEqual(dependencyImpact(graph, "missing.csproj", "project"), []);
   assert.equal(dependencyImpact(fixture, "Domain.csproj", "project")[0].node.path, "Api.csproj");
+});
+
+test("debugging observation contract accepts normalized Python Sentry evidence", () => {
+  const result = spawnSync(python, ["-c", `
+from pathlib import Path
+from app.debugging.sentry_event import normalize_sentry_event_bytes
+print(normalize_sentry_event_bytes(Path('tests/fixtures/debugging/sentry_python_chained.json').read_bytes()).model_dump_json())
+`], { cwd: resolve("backend"), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  assert.equal(result.status, 0, result.stderr);
+  const observation = observationSchema.parse(JSON.parse(result.stdout));
+  assert.equal(observation.exceptions[0].relation_to_next, "direct_cause");
+  assert.ok(!JSON.stringify(observation).includes("hunter2"));
+  assert.equal(observationSchema.safeParse({ ...observation, schema_version: "0.2" }).success, false);
 });

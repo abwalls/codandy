@@ -1,0 +1,46 @@
+{
+  "id": "b7e4a1c9d2f34e5f8a9b0c1d2e3f4a5b",
+  "eventID": "b7e4a1c9d2f34e5f8a9b0c1d2e3f4a5b",
+  "groupID": "4502",
+  "projectID": "13",
+  "title": "TypeError: Cannot read properties of undefined (reading 'total')",
+  "message": "",
+  "platform": "javascript",
+  "dateCreated": "2026-09-11T09:15:00Z",
+  "dateReceived": "2026-09-11T09:15:01Z",
+  "release": null,
+  "tags": [{"key": "environment", "value": "staging"}, {"key": "browser", "value": "Chrome 131"}],
+  "errors": [
+    {"type": "js_no_source", "message": "Source code was not found", "data": {"url": "https://shop.example.com/static/js/main.4f1c2a.js"}}
+  ],
+  "entries": [
+    {
+      "type": "exception",
+      "data": {
+        "values": [
+          {
+            "type": "TypeError",
+            "value": "Cannot read properties of undefined (reading 'total')",
+            "mechanism": {"type": "onunhandledrejection", "handled": false},
+            "stacktrace": {
+              "frames": [
+                {
+                  "filename": "/static/js/vendor.91ab.js", "absPath": "https://shop.example.com/static/js/vendor.91ab.js",
+                  "function": "Promise.then", "lineNo": 2, "colNo": 88213, "inApp": false, "context": [],
+                  "errors": [{"type": "js_no_source", "url": "https://shop.example.com/static/js/vendor.91ab.js"}]
+                },
+                {
+                  "filename": "/static/js/main.4f1c2a.js", "absPath": "https://shop.example.com/static/js/main.4f1c2a.js",
+                  "function": "a", "lineNo": 1, "colNo": 34567, "inApp": true, "context": [],
+                  "mapUrl": "http://127.0.0.1:9000/main.4f1c2a.js.map", "sourceLink": null,
+                  "errors": [{"type": "js_no_source"}]
+                }
+              ],
+              "framesOmitted": null
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

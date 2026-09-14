@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -137,7 +139,7 @@ function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: 
             <div className="text-xs text-slate-500">Repository intelligence</div>
           </div>
         </div>
-        <div className="flex items-center gap-2"><ThemePicker /><Button
+        <div className="flex items-center gap-2"><Button variant="outline" asChild><Link href="/debugging">Errors & stacks</Link></Button><ThemePicker /><Button
           variant="outline"
           className="h-10 border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
           onClick={() => window.alert("ChatGPT authentication is scaffolded for the next milestone.")}
