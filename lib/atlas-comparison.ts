@@ -10,6 +10,8 @@ function canonical(value: unknown): string {
 }
 
 function repositoryKey(atlas: AnalysisAtlas): string {
+  // Uploads have no URL; the archive name is the only identity they carry.
+  if (atlas.repository.source === "archive") return atlas.repository.name ? `archive:${atlas.repository.name.toLowerCase()}` : "";
   return (atlas.repository.url || "").replace(/\/$/, "").replace(/\.git$/i, "").toLowerCase();
 }
 

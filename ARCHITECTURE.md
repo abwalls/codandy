@@ -81,3 +81,10 @@ Local services remain on localhost:5173 and 127.0.0.1:8000. The active checkout 
 Hosted Sites can serve the UI/sample but cannot execute the Python/Git/native parser. Its assistant routes remain intentionally unavailable. Real hosted investigation data requires a separately secured backend, tenant/connection authorization and secret storage. Do not imply the private preview now has a Sentry integration.
 
 CODANDY_* settings are canonical; legacy settings/header aliases and the browser theme storage key remain supported. Existing atlas/report imports remain compatible. This documentation change adds no runtime migrations, integrations or new UI behavior.
+
+
+## Implemented investigation slice (2026-09-14)
+
+`SavedCase` (case-0.1) persists one immutable sanitized observation, editable user annotations/status, a selected snapshot identity and candidate SourceBinding records. Atomic bounded local files are independent of report eviction. Source text remains governed by the existing captured-source endpoint; expired snapshots stay explicitly unavailable. Brief packets include bounded frame IDs, user annotations and binding provenance; exact packet digests bind review to local Codex submission. Neither the diagram nor source matching adds edges to atlas 0.2.
+
+Tests override application storage and provider settings in an autouse fixture. This protects personal data even when backend/.env enables report persistence or local provider connections.

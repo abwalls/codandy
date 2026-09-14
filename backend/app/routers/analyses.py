@@ -4,6 +4,13 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
+from app.archives import (
+    ARCHIVE_CONTENT_TYPES,
+    ArchiveTooLarge,
+    ArchiveUpload,
+    archive_label,
+    receive_archive,
+)
 from app.dependency_checks import check_dependency, slots
 from app.ingestion import IngestionError
 from app.jobs import JobStore
@@ -24,6 +31,38 @@ async def create_analysis(body: AnalysisCreate, request: Request) -> AnalysisJob
     try:
         return store(request).create(body)
     except IngestionError as exc:
+        raise HTTPException(429, str(exc), headers={"Retry-After": "5"}) from exc
+
+
+@router.post("/archive", response_model=AnalysisJob, status_code=202)
+async def create_archive_analysis(request: Request) -> AnalysisJob:
+    """Accept a raw .zip body. Errors are plain strings so the client can show them."""
+    jobs = store(request)
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type not in ARCHIVE_CONTENT_TYPES:
+        raise HTTPException(415, "Upload the project as a .zip archive")
+    try:
+        name = archive_label(request.query_params.get("filename"))
+    except IngestionError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > jobs.limits.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, f"ZIP uploads are limited to {jobs.limits.max_upload_mb} MB")
+    # Checked before streaming so a busy backend does not receive the whole body first;
+    # create() re-checks atomically.
+    if jobs.busy():
+        raise HTTPException(429, "An analysis is already running; retry after it finishes",
+                            headers={"Retry-After": "5"})
+    try:
+        path = await receive_archive(request.stream(), jobs.limits)
+    except ArchiveTooLarge as exc:
+        raise HTTPException(413, str(exc)) from exc
+    except IngestionError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    try:
+        return jobs.create(ArchiveUpload(name=name, path=path))
+    except IngestionError as exc:
+        path.unlink(missing_ok=True)
         raise HTTPException(429, str(exc), headers={"Retry-After": "5"}) from exc
 
 

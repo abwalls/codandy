@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     workspace_root: str = ".workspaces"
     # Opt-in local, single-process persistence for completed reports and captured source.
     report_root: str | None = None
+    investigation_root: str | None = ".investigations"
     sentry_token: SecretStr = SecretStr("")
     sentry_host: Literal["sentry.io", "us.sentry.io", "de.sentry.io"] = "sentry.io"
     sentry_organization: str = ""
@@ -32,6 +33,8 @@ class Settings(BaseSettings):
     codex_executable: str = ""
     codex_home: str = ".codex-codandy"
     max_repository_mb: int = Field(default=250, ge=1, le=1000)
+    # Compressed ZIP upload size. Extracted content is still bounded by max_repository_mb.
+    max_upload_mb: int = Field(default=100, ge=1, le=1000)
     max_file_count: int = Field(default=25000, ge=1, le=100000)
     max_path_depth: int = Field(default=30, ge=1, le=100)
     clone_timeout_seconds: int = Field(default=120, ge=1, le=600)

@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import { useMemo, useState } from "react";
-import { AnalysisAtlas } from "@/lib/analysis-api";
+import { AnalysisAtlas, repositoryName } from "@/lib/analysis-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ArchitectureMap } from "@/components/architecture-map";
 import { GroundedSection } from "@/components/grounded-report";
 import { AtlasComparison } from "@/components/atlas-comparison";
 import { DependencyImpact } from "@/components/dependency-impact";
@@ -52,8 +53,8 @@ function LiveReportContent({ atlas, jobId, onExit }: { atlas: AnalysisAtlas; job
   return <main className="atlas-grid min-h-svh bg-[var(--background)] text-slate-100">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
       <div className="min-w-0"><div className="font-semibold text-cyan-200">Codandy <span className="ml-2 text-xs text-emerald-300">Real analysis</span></div>
-        <h1 className="break-all text-lg">{atlas.repository.url?.replace("https://github.com/", "").replace(/\.git$/, "")}</h1>
-        <p className="text-xs text-slate-400">{atlas.repository.branch || atlas.repository.ref} · commit {atlas.repository.commit?.slice(0, 12) || "not detected"}</p></div>
+        <h1 className="break-all text-lg">{repositoryName(atlas.repository)}</h1>
+        <p className="text-xs text-slate-400">{atlas.repository.source === "archive" ? "Uploaded ZIP archive · no Git revision" : `${atlas.repository.branch || atlas.repository.ref} · commit ${atlas.repository.commit?.slice(0, 12) || "not detected"}`}</p></div>
       <div className="flex flex-wrap items-center gap-2"><ThemePicker /><Button variant="outline" onClick={download}>Download atlas</Button><Button onClick={onExit}>New analysis</Button></div>
     </header>
     <div className="mx-auto grid max-w-[1600px] gap-6 p-5 lg:grid-cols-[210px_minmax(0,1fr)]">
@@ -81,7 +82,7 @@ function LiveReportContent({ atlas, jobId, onExit }: { atlas: AnalysisAtlas; job
               {filePaths.has(selected.path) ? <><DependencyImpact key={`${selected.kind}:${selected.path}`} atlas={atlas} path={selected.path} kind={selected.kind === "project" ? "project" : "file"} onInspect={setSelectedId} /><h4 className="mt-5 font-medium">Source</h4>
               <SourceView key={`${jobId}:${selected.path}`} jobId={jobId} path={selected.path} lines={selected.evidence[0]?.lines} /></>
                 : <p className="mt-5 text-sm text-slate-400">This node is not backed by a single source file.</p>}</> : <p className="text-sm text-slate-400">Select a node to inspect its source locations and relationships.</p>}</aside></div>
-        </> : reportSection ? <GroundedSection key={section} section={reportSection} atlas={atlas} onInspect={inspect} recommendations={section === "Recommended changes"} /> : <section className="rounded-xl border border-white/10 bg-[var(--surface-4)] p-6"><p className="text-xs uppercase text-amber-300">Reanalysis needed</p><p className="mt-3 text-slate-400">This older atlas does not contain generated reports. Start a new analysis to build these sections.</p></section>}
+        </> : reportSection ? <>{section === "Architecture" && <ArchitectureMap atlas={atlas} onInspect={inspect} />}<GroundedSection key={section} section={reportSection} atlas={atlas} onInspect={inspect} recommendations={section === "Recommended changes"} /></> : <section className="rounded-xl border border-white/10 bg-[var(--surface-4)] p-6"><p className="text-xs uppercase text-amber-300">Reanalysis needed</p><p className="mt-3 text-slate-400">This older atlas does not contain generated reports. Start a new analysis to build these sections.</p></section>}
       </div>
     </div>
     {metric && <OverviewDetails key={metric} metric={metric} total={atlas.counts[metric] ?? 0} rows={overviewNodes(atlas, metric)} onClose={() => setMetric(null)} onInspect={id => { setMetric(null); inspect(id); }} />}

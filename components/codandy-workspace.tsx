@@ -15,6 +15,7 @@ import {
   CircleDot,
   Code2,
   Database,
+  FileArchive,
   FileCode2,
   Files,
   GitBranch,
@@ -57,7 +58,7 @@ import { LiveReport } from "@/components/live-report";
 import { OverviewDetails } from "@/components/overview-details";
 import { type OverviewMetric } from "@/lib/overview-details";
 import { AskCodandyProvider, AskButton, useAskCodandy } from "@/components/ask-codandy";
-import { api, atlasSchema, jobSchema, type AnalysisAtlas, type AnalysisJob } from "@/lib/analysis-api";
+import { api, atlasSchema, jobSchema, MAX_ARCHIVE_BYTES, type AnalysisAtlas, type AnalysisJob } from "@/lib/analysis-api";
 
 type View = "intake" | "analyzing" | "report";
 type Section = "overview" | "architecture" | "flows" | "codebase" | "guide" | "recommendations" | "debugging" | "dependencies";
@@ -101,12 +102,26 @@ function BrandMark() {
   );
 }
 
-function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: string, ref?: string) => void; onDemo: () => void; onImport: (atlas: AnalysisAtlas) => void; onReopen: (atlas: AnalysisAtlas, job: AnalysisJob) => void }) {
+function Intake({ onAnalyze, onUpload, onDemo, onImport, onReopen }: { onAnalyze: (value: string, ref?: string) => void; onUpload: (file: File) => void; onDemo: () => void; onImport: (atlas: AnalysisAtlas) => void; onReopen: (atlas: AnalysisAtlas, job: AnalysisJob) => void }) {
   const [repo, setRepo] = useState("");
   const [ref, setRef] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
+  const archiveInput = useRef<HTMLInputElement>(null);
+
+  // Early feedback only; the backend re-validates the name, size and archive contents.
+  function chooseArchive(file: File | undefined) {
+    setArchiveError(null);
+    if (archiveInput.current) archiveInput.current.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".zip")) setArchiveError("Choose a .zip archive of your project.");
+    else if (!file.size) setArchiveError("This archive is empty.");
+    else if (file.size > MAX_ARCHIVE_BYTES) setArchiveError(`ZIP uploads are limited to ${MAX_ARCHIVE_BYTES / 1024 / 1024} MB.`);
+    else onUpload(file);
+  }
 
   async function openAtlas(file: File) {
     setImportError(null);
@@ -159,7 +174,7 @@ function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: 
             See how the codebase <span className="atlas-text-glow text-cyan-200">actually works.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-slate-400">
-            Explore files, declarations, imports, and route candidates with evidence from a public GitHub repository.
+            Explore files, declarations, imports, and route candidates with evidence from a public GitHub repository or a ZIP of your project.
           </p>
 
           <form onSubmit={submit} className="mt-10 max-w-2xl rounded-2xl border border-white/10 bg-[var(--surface-5)]/90 p-3 shadow-[0_24px_80px_rgba(0,0,0,.28)] backdrop-blur">
@@ -182,9 +197,29 @@ function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: 
             </div>
             <div className="mt-3 flex flex-col items-start justify-between gap-2 px-1 pb-1 sm:flex-row sm:items-center">
               <Input aria-label="Branch or tag (optional)" placeholder="Branch or tag (default branch if blank)" value={ref} onChange={event => setRef(event.target.value)} className="max-w-sm border-white/10" />
-              <span className="text-xs text-slate-500">Public GitHub only · ZIP and folder uploads coming later</span>
+              <span className="text-xs text-slate-500">Public GitHub repositories · folder uploads coming later</span>
             </div>
           </form>
+          <div className="mt-4 max-w-2xl">
+            <div className="flex items-center gap-3 px-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-slate-600"><span className="h-px flex-1 bg-white/[0.07]" />or<span className="h-px flex-1 bg-white/[0.07]" /></div>
+            <input ref={archiveInput} type="file" accept=".zip,application/zip,application/x-zip-compressed" aria-label="Choose project ZIP archive" className="hidden" onChange={event => chooseArchive(event.target.files?.[0])} />
+            <button
+              type="button"
+              onClick={() => archiveInput.current?.click()}
+              onDragOver={event => { event.preventDefault(); setDragging(true); }}
+              onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+              onDrop={event => { event.preventDefault(); setDragging(false); chooseArchive(event.dataTransfer.files[0]); }}
+              className={`group mt-4 flex w-full items-center gap-4 rounded-2xl border border-dashed p-4 text-left transition ${dragging ? "border-cyan-300/60 bg-cyan-300/[0.07]" : "border-white/15 bg-[var(--surface-5)]/60 hover:border-cyan-300/30 hover:bg-white/[0.03]"}`}
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-cyan-200"><FileArchive className="size-5" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-slate-100">{dragging ? "Drop to analyze this archive" : "Upload a ZIP of your project"}</span>
+                <span className="mt-0.5 block text-xs leading-5 text-slate-500">Drop a .zip here or click to browse · up to {MAX_ARCHIVE_BYTES / 1024 / 1024} MB · extracted into a disposable workspace, never executed</span>
+              </span>
+              <ArrowRight className="size-4 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-200" />
+            </button>
+            {archiveError && <p role="alert" className="mt-2 px-1 text-sm text-amber-200">{archiveError}</p>}
+          </div>
           <RecentReports onOpen={onReopen} />
           <div className="mt-4 max-w-2xl space-y-2">
             <input ref={importInput} type="file" accept=".json,application/json" aria-label="Choose saved atlas" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void openAtlas(file); }} />
@@ -224,9 +259,10 @@ function Intake({ onAnalyze, onDemo, onImport, onReopen }: { onAnalyze: (value: 
   );
 }
 
-function Analyzing({ source, job, error, connection, onExit }: { source: string; job: AnalysisJob | null; error: string | null; connection: string; onExit: () => void }) {
+function Analyzing({ source, archive, job, error, connection, onExit }: { source: string; archive: boolean; job: AnalysisJob | null; error: string | null; connection: string; onExit: () => void }) {
   const progress = job?.progress ?? 0;
-  const activeStep = ["queued", "cloning", "detecting", "indexing", "linking", "reporting", "validating", "complete"].indexOf(job?.phase ?? "queued");
+  const activeStep = ["queued", archive ? "extracting" : "cloning", "detecting", "indexing", "linking", "reporting", "validating", "complete"].indexOf(job?.phase ?? "queued");
+  const steps = archive ? analysisSteps.map((step, index) => index === 1 ? "Extracting archive" : step) : analysisSteps;
 
   return (
     <main className="atlas-grid grid min-h-svh place-items-center bg-[var(--background)] px-5 text-slate-100">
@@ -243,7 +279,7 @@ function Analyzing({ source, job, error, connection, onExit }: { source: string;
         {error && <div role="alert" className="mt-4 rounded-xl border border-red-400/30 p-4 text-sm text-red-200">{error}</div>}
         {error && <Button onClick={onExit} className="mt-4">Back to repository input</Button>}
         <div className="mt-7 space-y-1">
-          {analysisSteps.map((step, index) => {
+          {steps.map((step, index) => {
             const complete = index < activeStep;
             const active = index === activeStep;
             return (
@@ -589,19 +625,20 @@ function SampleReportContent({ onExit }: { onExit: () => void }) {
 export function CodandyWorkspace() {
   const [view, setView] = useState<View>("intake");
   const [source, setSource] = useState("");
+  const [archive, setArchive] = useState(false);
   const [job, setJob] = useState<AnalysisJob | null>(null);
   const [atlas, setAtlas] = useState<AnalysisAtlas | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connection, setConnection] = useState("Submitting repository");
   const busy = useRef(false);
 
-  const analyze = useCallback(async (value: string, ref?: string) => {
+  const start = useCallback(async (label: string, isArchive: boolean, submit: () => Promise<unknown>) => {
     if (busy.current) throw new Error("An analysis is already running");
     busy.current = true;
-    setSource(value); setAtlas(null); setJob(null); setError(null);
-    setConnection("Submitting repository"); setView("analyzing");
+    setSource(label); setArchive(isArchive); setAtlas(null); setJob(null); setError(null);
+    setConnection(isArchive ? "Uploading archive" : "Submitting repository"); setView("analyzing");
     try {
-      const created = jobSchema.parse(await api("", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: { url: value, ref } }) }));
+      const created = jobSchema.parse(await submit());
       setJob(created);
       return { status: "started", jobId: created.id };
     } catch (cause) {
@@ -611,6 +648,13 @@ export function CodandyWorkspace() {
       return { status: "failed" };
     }
   }, []);
+
+  const analyze = useCallback((value: string, ref?: string) => start(value, false, () =>
+    api("", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: { url: value, ref } }) })), [start]);
+
+  // Uploads can take far longer than the default request timeout on slow connections.
+  const analyzeArchive = useCallback((file: File) => start(file.name, true, () =>
+    api(`/archive?filename=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "application/zip" }, body: file, signal: AbortSignal.timeout(10 * 60_000) })), [start]);
 
   const jobId = job?.id;
   useEffect(() => {
@@ -698,7 +742,7 @@ export function CodandyWorkspace() {
   }, [analyze]);
 
   const exit = () => { setView("intake"); setJob(null); setError(null); };
-  if (view === "analyzing") return <Analyzing source={source} job={job} error={error} connection={connection} onExit={exit} />;
+  if (view === "analyzing") return <Analyzing source={source} archive={archive} job={job} error={error} connection={connection} onExit={exit} />;
   if (view === "report") return atlas ? <LiveReport atlas={atlas} jobId={jobId ?? null} onExit={exit} /> : <Report onExit={exit} />;
-  return <Intake onAnalyze={(value, ref) => { void analyze(value, ref); }} onDemo={() => { setAtlas(null); setView("report"); }} onImport={result => { setJob(null); setAtlas(result); setView("report"); }} onReopen={(result, savedJob) => { setJob(savedJob); setAtlas(result); setView("report"); }} />;
+  return <Intake onAnalyze={(value, ref) => { void analyze(value, ref); }} onUpload={file => { void analyzeArchive(file); }} onDemo={() => { setAtlas(null); setView("report"); }} onImport={result => { setJob(null); setAtlas(result); setView("report"); }} onReopen={(result, savedJob) => { setJob(savedJob); setAtlas(result); setView("report"); }} />;
 }

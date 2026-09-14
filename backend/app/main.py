@@ -5,14 +5,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.codex_bridge import CodexBridge
+from app.debugging.cases import CaseStore
 from app.jobs import JobStore
-from app.routers import analyses, assistant, debugging, health
+from app.routers import analyses, assistant, cases, debugging, health
 from app.settings import settings
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     application.state.jobs = JobStore(settings)
+    application.state.investigations = CaseStore(settings.investigation_root)
     application.state.codex = CodexBridge(settings.codex_executable, Path(settings.codex_home)) if settings.codex_enabled else None
     try:
         yield
@@ -39,5 +41,6 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(debugging.router, prefix="/api")
+app.include_router(cases.router, prefix="/api")
 app.include_router(assistant.router, prefix="/api")
 app.include_router(analyses.router, prefix="/api")

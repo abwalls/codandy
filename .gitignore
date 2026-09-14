@@ -53,6 +53,8 @@ backend/.venv-managed/
 .workspaces/
 backend/.workspaces/
 backend/.reports/
+backend/.investigations/
+/.investigations/
 backend/.codex-codandy/
 /.codex-codandy/
 /.reports/

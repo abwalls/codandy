@@ -5,10 +5,10 @@ The debugging pivot replaces the old M0–M5 ordering. Detailed contracts and ac
 | Gate | Outcome | Dependencies | Status |
 |---|---|---|---|
 | D0 | Research, current-code audit and debugging-first plan | Existing foundation | Complete: documentation only |
-| D1a | Sanitized event/stack import and investigation contracts | None beyond foundation | Next |
-| D1b | Read-only Sentry connection, issues and event retrieval | D1a; account/region/scopes | Planned |
-| D1c | Frame/source binding and persistent investigation UI | D1a; snapshot identity | Planned |
-| D1d | Live issue → source → reviewed AI brief | D1b + D1c | First demo gate |
+| D1a | Sanitized event/stack import and investigation contracts | None beyond foundation | Implemented; fixture validated |
+| D1b | Read-only Sentry connection, issues and event retrieval | D1a; account/region/scopes | Event retrieval implemented; browsing and live validation pending |
+| D1c | Frame/source binding and persistent investigation UI | D1a; snapshot identity | Local persistence and candidate matching implemented; independent revision verification pending |
+| D1d | Live issue → source → reviewed AI brief | D1b + D1c | Brief export/local Q&A implemented; live end-to-end gate remains open |
 | D2 | Evidence follow-ups, verification attachments and source-access improvements | D1 | Planned |
 | D3 | Trace waterfall and one profile-format spike | D1 observation layer | Planned |
 | D4 | Single-user whiteboard and structured AI handoff | D1 evidence references | Planned; part of v1 |

@@ -10,9 +10,9 @@ This plan supersedes the previous milestone ordering and debugging deferral. It 
 
 ## Current baseline
 
-Implemented: bounded static GitHub analysis across five language families; file/symbol/source inspection; partial route and local-call inference; dependency inventory and checks; graph-based reports; local report persistence; snapshot comparisons; themes; and independent, evidence-scoped questions through a local Codex subscription connection. The last implementation checkpoint reports 134 backend tests, 23 frontend contracts, type/lint checks and a successful build. Those were not rerun for this documentation-only pivot.
+Implemented: bounded static GitHub analysis across five language families; file/symbol/source inspection; partial route and local-call inference; dependency inventory and checks; graph-based reports; local report persistence; snapshot comparisons; themes; and independent, evidence-scoped questions through a local Codex subscription connection. The current implementation also supports bounded ZIP project uploads, an interactive Architecture dependency map, local saved investigations, conservative frame/source candidates and reviewed debugging briefs with local Codex Q&A. Current validation: 221 backend tests, 28 frontend contracts and desktop/mobile headless Edge workflow checks; see progress.md for build and publication checkpoints.
 
-Not implemented: Sentry authentication or event retrieval, an investigation store, runtime frame binding, trace/profile analysis, live debugger control, whiteboards, private repository intake, and a Codandy MCP server. The hosted frontend remains separate from local Python analysis and subscription AI.
+Not implemented: Sentry project/issue browsing, independently verified runtime revision binding, trace/profile analysis, live debugger control, whiteboards, private Git provider authentication, trusted local-folder indexing and a Codandy MCP server. The read-only Sentry event connector is implemented but still awaits a real authorized account test. The hosted frontend remains separate from local Python analysis and subscription AI.
 
 ## Initial audience and product promise
 

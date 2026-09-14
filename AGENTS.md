@@ -8,9 +8,10 @@ Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the la
 
 ## Current state
 
-- Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. The last implementation validation was 134 backend tests and 23 frontend/API contracts plus type/lint/build checks.
+- Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. Current validation includes 221 backend tests and 28 frontend/API contracts, plus desktop/mobile Edge workflow QA. Tests must use the autouse isolated storage/provider fixture in backend/tests/conftest.py; never run them against personal reports or provider credentials.
 - Implemented D1 slice: local Sentry REST event/stack imports, sanitized observation viewer/export, and a backend-held read-only Sentry Cloud event connector. Live credentials have not been configured or verified.
-- Planned, not implemented: project/issue browsing, persisted investigations, runtime frame binding, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
+- Implemented: ZIP project upload, interactive static Architecture map, local saved cases/notes/status, candidate frame-to-snapshot matching, reviewed brief export and local investigation Q&A. Unknown or user-supplied revisions never upgrade to independently verified exact bindings.
+- Planned, not implemented: project/issue browsing, independent runtime revision verification, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
 - Actual static relationship types: CONTAINS, IMPORTS, RESOLVES_TO, DEPENDS_ON, ROUTES_TO and CALLS. IDs are deterministic from kind/path/name; snapshot identity is required for runtime associations. No comprehensive call graph, coverage or per-function performance claim is supported.
 - The hosted UI/sample remains separate from local Python analysis and subscription AI. Keep samples and unavailable features clearly labeled.
 

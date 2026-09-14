@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { debuggingRequest } from "@/lib/debugging-api";
 import { Button } from "@/components/ui/button";
 import { assistantApi, connectionSchema, answerSchema, loginSchema } from "@/lib/assistant-api";
 import type { AskScope } from "@/lib/ask-context";
 
-export function AssistantConnection({ jobId, question, scope }: { jobId: string; question: string; scope: AskScope }) {
+export function AssistantConnection({ jobId, question, scope, investigation }: { jobId?: string; question: string; scope: AskScope; investigation?: { caseId: string; reviewDigest: string } }) {
   const [connection, setConnection] = useState<ReturnType<typeof connectionSchema.parse> | null>(null);
   const [model, setModel] = useState("");
   const [effort, setEffort] = useState("");
@@ -37,7 +38,7 @@ export function AssistantConnection({ jobId, question, scope }: { jobId: string;
   async function ask() {
     setBusy(true); setError(""); setReply(null);
     try {
-      const result = answerSchema.parse(await assistantApi("ask", { analysis_id: jobId, question, title: scope.title.slice(0, 250), node_ids: [...new Set(scope.nodeIds || [])].slice(0, 100), model, effort }));
+      const result = answerSchema.parse(investigation ? await debuggingRequest(`/cases/${investigation.caseId}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, model, effort, review_digest: investigation.reviewDigest }), signal: AbortSignal.timeout(190000) }) : await assistantApi("ask", { analysis_id: jobId, question, title: scope.title.slice(0, 250), node_ids: [...new Set(scope.nodeIds || [])].slice(0, 100), model, effort }));
       setReply({ question, result });
     } catch (cause) { setError(cause instanceof Error ? cause.message : "The assistant could not answer."); }
     finally { setBusy(false); }
@@ -51,8 +52,8 @@ export function AssistantConnection({ jobId, question, scope }: { jobId: string;
     {connection?.connected && <><p className="text-sm text-cyan-300">Connected · {connection.plan || "ChatGPT"}</p><div className="flex flex-wrap gap-3">
       <label className="text-xs">Model<select aria-label="AI model" disabled={busy} value={model} onChange={event => { const value = connection.models.find(item => item.id === event.target.value); setModel(event.target.value); setEffort(value?.default_effort || ""); }} className="mt-1 block max-w-full rounded-lg bg-card p-2">{connection.models.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <label className="text-xs">Reasoning effort<select aria-label="Reasoning effort" disabled={busy} value={effort} onChange={event => setEffort(event.target.value)} className="mt-1 block rounded-lg bg-card p-2">{selected?.efforts.map(value => <option key={value}>{value}</option>)}</select></label>
-    </div><Button disabled={busy || !question.trim() || !model || !effort} onClick={() => void ask()}>Ask using my plan</Button><p className="text-xs text-slate-400">Sends your question and up to 24 retained graph nodes to Codex. Source bodies, draft notes, live advisory results and comparison baselines are not sent. Each question starts a fresh conversation.</p></>}
+    </div><Button disabled={busy || !question.trim() || !model || !effort} onClick={() => void ask()}>Ask using my plan</Button><p className="text-xs text-slate-400">{investigation ? "Sends your question and the reviewed saved-case packet to Codex, including its saved notes and candidate source references. Source bodies are not sent. Each question starts a fresh conversation." : "Sends your question and up to 24 retained graph nodes to Codex. Source bodies, draft notes, live advisory results and comparison baselines are not sent. Each question starts a fresh conversation."}</p></>}
     {error && <p role="alert" className="text-sm text-amber-200">{error}</p>}
-    {reply && <div aria-live="polite" className="space-y-3 border-t border-white/10 pt-3"><p className="text-sm font-medium">{reply.question}</p><p className="whitespace-pre-wrap text-sm leading-6">{reply.result.answer}</p><details><summary className="text-xs">Cited node IDs ({reply.result.citations.length})</summary><ul className="mt-2 space-y-1 text-xs text-cyan-300">{reply.result.citations.map(id => <li key={id} className="break-all">{id}</li>)}</ul></details><p className="text-xs text-slate-400">AI explanation. Citation IDs are checked against the supplied context; factual correctness still needs review.</p></div>}
+    {reply && <div aria-live="polite" className="space-y-3 border-t border-white/10 pt-3"><p className="text-sm font-medium">{reply.question}</p><p className="whitespace-pre-wrap text-sm leading-6">{reply.result.answer}</p><details><summary className="text-xs">Cited evidence IDs ({reply.result.citations.length})</summary><ul className="mt-2 space-y-1 text-xs text-cyan-300">{reply.result.citations.map(id => <li key={id} className="break-all">{id}</li>)}</ul></details><p className="text-xs text-slate-400">AI explanation. Citation IDs are checked against the supplied context; factual correctness still needs review.</p></div>}
   </section>;
 }

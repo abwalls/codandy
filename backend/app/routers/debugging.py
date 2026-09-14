@@ -51,12 +51,14 @@ async def import_observation(request: Request):
                 raise HTTPException(413, "Import exceeds the 2 MiB budget")
             data.extend(chunk)
         if media == "application/json":
-            return await run_in_threadpool(normalize_sentry_event_bytes, bytes(data))
+            observation = await run_in_threadpool(normalize_sentry_event_bytes, bytes(data))
+            return request.app.state.investigations.remember(observation)
         try:
             text = data.decode("utf-8-sig")
         except UnicodeDecodeError:
             raise HTTPException(422, "Stack text must be UTF-8") from None
-        return await run_in_threadpool(normalize_stack_text, text)
+        observation = await run_in_threadpool(normalize_stack_text, text)
+        return request.app.state.investigations.remember(observation)
     except NormalizationError as exc:
         raise HTTPException(422, str(exc)) from None
     finally:
@@ -64,11 +66,11 @@ async def import_observation(request: Request):
 
 
 @router.post("/sentry/issues/{issue}/events/{event}", response_model=Observation)
-def retrieve(issue: str, event: str):
+def retrieve(issue: str, event: str, request: Request):
     if not busy.acquire(blocking=False):
         raise HTTPException(409, "Another debugging request is running")
     try:
-        return fetch_event(settings, issue, event)
+        return request.app.state.investigations.remember(fetch_event(settings, issue, event))
     except SentryError as exc:
         raise HTTPException(502, str(exc)) from None
     finally:

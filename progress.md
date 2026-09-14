@@ -357,3 +357,42 @@ separate because the consolidation was explicitly declined.
 - Published implementation commit 574eae4 to abwalls/codandy; author and committer both use the approved abwalls GitHub no-reply identity. Tracked source contains no former-company text.
 - Owner-private Sites version 4 deployed successfully from that implementation commit at https://codandy.abwalls.chatgpt.site (deployment appgdep_6aa81c86f45481919956df6956561f38). Local testing entry: http://localhost:5173/debugging; backend remains running on 8000. This final log-only checkpoint does not change the deployed runtime.
 - Sentry credentials and a real account verification remain outstanding; all delivered provider tests use synthetic responses. Continue with the remaining D1 items listed above.
+
+
+### 2026-09-14 - Investigation persistence started
+
+- Resumed from dd6efa5. Adding local saved cases with independent sanitized evidence, bounded storage, atomic writes, notes/status and explicit deletion. Imports retain at most 20 normalized observations awaiting Save; raw telemetry is not retained. No Sentry account is needed for this slice.
+
+
+### 2026-09-14 - Saved-case tests passed; source matching started
+
+- Saved cases now support save/reopen, scrubbed notes/title edits, open/resolved/archived status and explicit delete. 43 focused debugging/persistence tests passed, including restart recovery, pending-observation eviction and atomic-write failure. TypeScript passed.
+- Adding persisted frame-to-snapshot candidates next. Matching uses only indexed file paths, preserves ambiguity and treats user-supplied runtime commits as unverified; mismatches remain visible. No exact match is claimed without independent revision evidence.
+
+
+### 2026-09-14 - Source matching and reviewed AI briefs
+
+- Added persisted frame candidates against retained snapshots, deployment-prefix matching, duplicate-path ambiguity, runtime-commit mismatch labels and captured-source viewing. 54 focused persistence/import/binding tests passed. Unknown revisions never become exact bindings.
+- Added a bounded debugging brief with observation/frame citation IDs, clearly labeled user notes, explicit omissions and no source-body expansion. Added local Codex Q&A using the reviewed packet digest: stale reviews and citations outside the packet are rejected. Model tools remain disabled and each question uses an ephemeral thread. Validation for this slice is in progress; no live AI or Sentry request has been made.
+
+
+### 2026-09-14 - ZIP project upload intake (Claude, at Andrew's request)
+
+- Added `POST /api/analyses/archive` (raw `application/zip` body, streamed with a byte cap, new `CODANDY_MAX_UPLOAD_MB=100`) and a homescreen ZIP dropzone next to the GitHub form. Extraction in `backend/app/archives.py` validates every member name before writing, rejects links/encrypted members, bounds declared and actual bytes, file count, depth and case-folded conflicts, unwraps a single wrapper folder, and never writes `EXCLUDED_DIRS`/`SECRET_NAME` paths. Uploads reuse the spawned analyzer, source capture and persistence; atlas stays 0.2 with `repository = {source: archive, name, ref: upload}` and no commit (archive Git metadata is never read). `ArchiveUpload` is intentionally not a JSON request model.
+- Verification: 218 backend tests (27 new archive tests), 26 frontend/API contracts, TypeScript, changed-file ESLint and Ruff, production build, and a live isolated-uvicorn smoke (content-length and chunked uploads, busy/415/422 rejections, exclusions, source traversal 404, clean workspace). Whole-backend `ruff check .` still reports the pre-existing I001 in `app/debugging/brief.py`.
+- Not verified: browser/visual QA (Chrome extension unavailable), upload through the Vite proxy (running :8000 backend has no `--reload` and was not restarted), hosted Worker streaming. Nothing committed: git reports dubious ownership for this session's user. Full design notes and open items: ZIP-UPLOAD-NOTES-FOR-ASTRA.md.
+
+
+### 2026-09-14 - Architecture visualization and ZIP handoff review
+
+- User steered continued feature work toward Architecture diagrams; reviewed Claude's ZIP-upload handoff and preserved its changes. Adding an interactive static dependency map with folder/project views, search, focus, zoom, evidence drilldowns and explicit inferred/unresolved limits. No architectural service/layer claims are inferred from folder names.
+- ZIP follow-ups identified: bound central-directory metadata before ZipFile allocation and remove queued uploads if their future is cancelled. Existing source traversal, excluded paths and archive-no-revision rules remain required.
+
+
+### 2026-09-14 - Architecture, ZIP and investigation validation
+
+- Interactive Architecture map now shows real project references and joined IMPORTS/RESOLVES_TO evidence, including Go directory targets. Added search/depth/focus/zoom, source drilldown, contextual Ask, resolved/inferred legend and explicit view budgets. Refined mobile to readable connected cards after screenshot review.
+- Preserved Claude's ZIP intake and added metadata preflight before ZipInfo allocation, forged-directory-count checks and cancelled-queue cleanup. Directory bounds are 50,000 entries / 8 MiB; split/ZIP64 directories are explicitly unsupported.
+- 221 backend tests and 28 frontend contracts passed. Headless Edge QA passed actual ZIP upload through Vite, Architecture desktop/mobile and keyboard focus, case save/edit/reload, source matching/viewing, and reviewed brief preparation with no page errors. Provider calls were simulated, not live. Synthetic QA cases/reports were removed.
+- Found and fixed an existing test-isolation defect: TestClient lifespans were loading personal report persistence from backend/.env. The retention test replaced the local report list. Recovered the two original 161-file reports byte-for-byte from the preserved archive copy (IDs 4f347663-b46c-4223-aab0-57ac34e49497 and 8f9966e8-92e5-4ce4-bb72-66e3161954cb); quarantined known synthetic reports under ignored .tools. New autouse fixture redirects all app test storage and disables provider connections. Verify real report hashes remain unchanged after tests. Backend restarted to load recovered reports (wrapper PID 39840). No repository history was restored or merged.
+- Next: finish publication/build checkpoint, then continue Sentry project/issue browsing and the remaining roadmap. D1 live account validation remains open.

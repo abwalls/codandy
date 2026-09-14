@@ -178,7 +178,9 @@ def test_sentry_no_redirect():
 
 
 def client(host="127.0.0.1"):
+    from app.debugging.cases import CaseStore
     app = FastAPI()
+    app.state.investigations = CaseStore(None)
     app.include_router(router, prefix="/api")
     return TestClient(app, base_url="http://localhost", client=(host, 1234))
 

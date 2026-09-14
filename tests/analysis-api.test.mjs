@@ -1,3 +1,4 @@
+import { architectureMap } from "../lib/architecture-map.ts";
 import { observationSchema } from "../lib/debugging-api.ts";
 import { dependencyUsage } from "../lib/dependency-usage.ts";
 import { connectionSchema, loginSchema, assistantApi } from "../lib/assistant-api.ts";
@@ -11,7 +12,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
-import { atlasSchema, jobSchema, sourceFileSchema, recentReportsSchema, dependencyCheckSchema, api } from "../lib/analysis-api.ts";
+import { atlasSchema, jobSchema, sourceFileSchema, recentReportsSchema, dependencyCheckSchema, api, repositoryName } from "../lib/analysis-api.ts";
 import { GET, POST, DELETE } from "../app/api/analyses/[[...path]]/route.ts";
 
 const python = process.env.CODANDY_TEST_PYTHON || resolve("backend",
@@ -356,4 +357,63 @@ print(normalize_sentry_event_bytes(Path('tests/fixtures/debugging/sentry_python_
   assert.equal(observation.exceptions[0].relation_to_next, "direct_cause");
   assert.ok(!JSON.stringify(observation).includes("hunter2"));
   assert.equal(observationSchema.safeParse({ ...observation, schema_version: "0.2" }).success, false);
+});
+
+test("hosted proxy streams ZIP uploads and forwards only the file name", async () => {
+  const oldFetch = globalThis.fetch;
+  const oldOrigin = process.env.CODANDY_API_URL;
+  process.env.CODANDY_API_URL = "https://backend.example.com";
+  const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]);
+  const upload = (query, type = "application/zip", method = "POST") => POST(new Request(
+    `https://atlas.example.com/api/analyses/archive${query}`, { method, headers: { "Content-Type": type }, body: bytes }));
+  try {
+    globalThis.fetch = async (url, init) => {
+      assert.equal(url.pathname, "/api/analyses/archive");
+      assert.deepEqual([...url.searchParams], [["filename", "project.zip"]]);
+      assert.equal(init.headers.get("Content-Type"), "application/zip");
+      assert.deepEqual(new Uint8Array(await new Response(init.body).arrayBuffer()), bytes);
+      return Response.json({ detail: "busy" }, { status: 429, headers: { "Retry-After": "5" } });
+    };
+    const busy = await upload("?filename=project.zip&token=leak");
+    assert.equal(busy.status, 429);
+    assert.equal(busy.headers.get("Retry-After"), "5");
+    globalThis.fetch = async () => assert.fail("Rejected uploads must not reach the backend");
+    assert.equal((await upload("")).status, 400);
+    assert.equal((await upload("?filename=project.zip", "text/plain")).status, 415);
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldOrigin === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = oldOrigin;
+  }
+});
+
+test("uploaded archives display by name and compare only with the same archive name", () => {
+  const upload = name => ({ ...structuredClone(fixture), repository: { source: "archive", name, ref: "upload", analyzed_at: "2026-09-14" } });
+  assert.equal(repositoryName(upload("project.zip").repository), "project.zip");
+  assert.equal(repositoryName(fixture.repository), "org/repo");
+  assert.equal(compareAtlases(upload("project.zip"), upload("Project.zip")).changes.length, 0);
+  assert.throws(() => compareAtlases(upload("project.zip"), upload("other.zip")), /same repository/);
+  assert.throws(() => compareAtlases(fixture, upload("project.zip")), /same repository/);
+});
+
+test("architecture map uses resolved import targets without inventing relationships", () => {
+  const node = (id, kind, path) => ({ id, kind, path, label: id, detail: "", confidence: 80, evidence: [], attributes: {} });
+  const edge = (source, target, type, resolution) => ({ source, target, type, resolution, confidence: 80, evidence: [] });
+  const sample = { nodes: [node("a", "file", "web/app.ts"), node("b", "file", "lib/core.ts"), node("i", "import", "web/app.ts"), node("missing", "import", "web/app.ts")],
+    relationships: [edge("a", "i", "IMPORTS", "unresolved"), edge("i", "b", "RESOLVES_TO", "inferred"), edge("a", "missing", "IMPORTS", "unresolved")] };
+  const graph = architectureMap(sample, "folders");
+  assert.equal(graph.links.length, 1);
+  assert.equal(graph.links[0].source, "web");
+  assert.equal(graph.links[0].target, "lib");
+  assert.equal(graph.links[0].inferred, 1);
+  assert.equal(graph.unresolved, 1);
+  assert.deepEqual(architectureMap({ ...sample, nodes: [...sample.nodes].reverse(), relationships: [...sample.relationships].reverse() }, "folders"), graph);
+  assert.equal(architectureMap(sample, "projects").links.length, 0);
+});
+
+test("architecture project map shows only actual project references", () => {
+  const graph = architectureMap(fixture, "projects");
+  assert.equal(graph.groups.length, 2);
+  assert.equal(graph.links.length, 1);
+  assert.ok(graph.links.every(link => link.nodeIds.every(id => fixture.nodes.some(node => node.id === id && node.kind === "project"))));
 });

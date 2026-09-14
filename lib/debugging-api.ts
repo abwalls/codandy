@@ -35,5 +35,5 @@ export async function debuggingRequest(path: string, options?: RequestInit) {
     const data = z.object({ detail: z.string() }).safeParse(await response.json().catch(() => null));
     throw new Error(data.success ? data.data.detail : "Debugging service is unavailable. Start the local backend.");
   }
-  return response.json();
+  return response.status === 204 ? null : response.json();
 }

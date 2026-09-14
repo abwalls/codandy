@@ -76,6 +76,15 @@ export const recentReportsSchema = z.object({
   reports: z.array(z.object({ id: z.string().uuid(), repository: z.record(z.string()), created_at: z.string() })),
 });
 
+// Mirrors the backend's default CODANDY_MAX_UPLOAD_MB so oversized files fail before
+// uploading. The backend limit is authoritative.
+export const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
+
+// ZIP uploads carry a display name instead of a URL, and no Git revision.
+export function repositoryName(repository: Record<string, string>) {
+  return repository.url ? repository.url.replace("https://github.com/", "").replace(/\.git$/, "") : repository.name || "Uploaded archive";
+}
+
 // Relative URLs work behind a production reverse proxy; Vite proxies them locally.
 export async function api(path: string, init?: RequestInit) {
   const response = await fetch(`/api/analyses${path}`, { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) });

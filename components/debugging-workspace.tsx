@@ -6,10 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { InvestigationBrief } from "@/components/investigation-brief";
+import { InvestigationSource } from "@/components/investigation-source";
+import { InvestigationCases } from "@/components/investigation-cases";
 import { ThemePicker } from "@/components/theme-picker";
 import { debuggingRequest, observationSchema, sentryStatusSchema, type Observation } from "@/lib/debugging-api";
 
 export function DebuggingWorkspace() {
+  const [caseId, setCaseId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [issue, setIssue] = useState("");
   const [event, setEvent] = useState("latest");
@@ -30,7 +34,7 @@ export function DebuggingWorkspace() {
 
   async function run(path: string, body?: string, media?: string) {
     if (busy) return;
-    setBusy(true); setError(""); setReviewed(false); setObservation(null);
+    setBusy(true); setError(""); setReviewed(false); setObservation(null); setCaseId(null);
     const abort = new AbortController(); controller.current = abort;
     try {
       if (body && new TextEncoder().encode(body).length > 2 * 1024 * 1024) throw new Error("Imports must be 2 MiB or smaller.");
@@ -53,6 +57,7 @@ export function DebuggingWorkspace() {
     <header className="mx-auto mb-8 flex max-w-6xl flex-wrap items-center justify-between gap-4"><Link href="/" className="font-semibold">← Codandy</Link><ThemePicker /></header>
     <div className="mx-auto grid max-w-6xl gap-7 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="space-y-6">
+        <InvestigationCases observation={observation} disabled={busy} onOpen={(value, id) => { setCaseId(id); setObservation(value); setReviewed(false); setError(""); }} />
         <div><h1 className="text-2xl font-semibold">Errors & stacks</h1><p className="mt-2 text-sm text-muted-foreground">Inspect a Sentry event or a Python, JavaScript or .NET stack. No repository execution is required.</p></div>
         <section className="space-y-3 rounded-xl border bg-card p-4"><h2 className="font-semibold">Read from Sentry</h2><p role="status" className="text-sm text-muted-foreground">{status}</p>
           <label className="block text-sm">Issue ID<Input value={issue} disabled={busy} onChange={e => setIssue(e.target.value)} placeholder="Numeric issue ID" /></label>
@@ -69,15 +74,16 @@ export function DebuggingWorkspace() {
             try { const content = await file.text(); await run("/imports", content, content.trimStart().startsWith("{") ? "application/json" : "text/plain"); }
             catch { setError("Could not read this file."); }
           }} /></label>
-          <p className="text-xs text-muted-foreground">2 MiB maximum. Evidence is sent to your local backend for scrubbing. Results stay in this page until cleared or downloaded; no automatic AI submission.</p>
+          <p className="text-xs text-muted-foreground">2 MiB maximum. Evidence is sent to your local backend for scrubbing. Save an investigation to retain sanitized evidence on this computer. No automatic AI submission.</p>
         </section>
       </aside>
       <section className="min-w-0 space-y-5" aria-label="Observation">
         {busy && <div role="status" className="flex items-center gap-3">Reading evidence…<Button variant="outline" onClick={() => controller.current?.abort()}>Cancel</Button></div>}
         {error && <p role="alert" className="break-words rounded-xl border border-destructive p-4">{error}</p>}
-        {!observation && !busy && <div className="rounded-xl border bg-card p-8"><h2 className="text-xl font-semibold">Start with the failure</h2><p className="mt-3 text-muted-foreground">Import an event to see its exception chain, ordered frames, breadcrumbs and missing evidence.</p><p className="mt-3 text-sm text-muted-foreground">Source binding and saved investigations are next. A stack alone does not establish function timing or the exact cause of a null reference.</p></div>}
+        {!observation && !busy && <div className="rounded-xl border bg-card p-8"><h2 className="text-xl font-semibold">Start with the failure</h2><p className="mt-3 text-muted-foreground">Import an event to see its exception chain, ordered frames, breadcrumbs and missing evidence.</p><p className="mt-3 text-sm text-muted-foreground">Save a case to preserve evidence and notes. Match saved cases to a repository snapshot to inspect candidate source files. A stack alone does not establish function timing or the exact cause of a null reference.</p></div>}
         {observation && <>
-          <div className="rounded-xl border bg-card p-5"><p className="text-sm text-muted-foreground">{observation.source.provider} · {observation.source.format}</p><h2 className="mt-2 break-words text-xl font-semibold">{observation.title || "Imported observation"}</h2><p className="mt-2 break-words text-sm">{observation.environment || "Environment unknown"} · {observation.release || "Revision unknown"}</p><Button className="mt-3" variant="outline" onClick={() => { setObservation(null); setReviewed(false); }}>Clear evidence</Button></div>
+          <div className="rounded-xl border bg-card p-5"><p className="text-sm text-muted-foreground">{observation.source.provider} · {observation.source.format}</p><h2 className="mt-2 break-words text-xl font-semibold">{observation.title || "Imported observation"}</h2><p className="mt-2 break-words text-sm">{observation.environment || "Environment unknown"} · {observation.release || "Revision unknown"}</p><Button className="mt-3" variant="outline" onClick={() => { setObservation(null); setCaseId(null); setReviewed(false); }}>Clear evidence</Button></div>
+          {caseId && <><InvestigationBrief key={`brief:${caseId}`} caseId={caseId} /><InvestigationSource key={caseId} caseId={caseId} /></>}
           {observation.exceptions.map(exception => <section key={exception.index} className="rounded-xl border bg-card p-5"><h3 className="break-words font-semibold">{exception.type || "Exception"}: {exception.value}</h3><p className="my-3 text-xs text-muted-foreground">Caller → callee · {exception.frames_omitted} omitted frames{exception.relation_to_next ? ` · followed by ${exception.relation_to_next.replaceAll("_", " ")}` : ""}</p>
             {!exception.frames.length && <p>No stack frames provided.</p>}
             <ol className="space-y-2">{exception.frames.map(frame => <li key={frame.index} className="rounded-lg border p-3"><details><summary className="cursor-pointer break-all font-mono text-sm">{frame.function || "Unknown function"} — {frame.path || frame.abs_path || "Path unavailable"}{frame.line ? `:${frame.line}` : ""}{frame.column !== null ? `:${frame.column}` : ""}</summary><p className="my-2 text-xs text-muted-foreground">{frame.in_app === null ? "Application ownership unknown" : frame.in_app ? "Application frame" : "External frame"}{frame.after_async_boundary ? " · async boundary" : ""} · Source revision unverified</p>{frame.context.length ? <pre className="overflow-auto text-xs">{frame.context.map(line => `${line.line}  ${line.text}`).join("\n")}</pre> : <p className="text-sm text-muted-foreground">No source context supplied.</p>}</details></li>)}</ol>

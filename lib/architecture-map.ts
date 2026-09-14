@@ -1,0 +1,55 @@
+import type { AnalysisAtlas } from "./analysis-api";
+
+export type ArchitectureGroup = { id: string; label: string; nodeIds: string[]; internal: number };
+export type ArchitectureLink = { source: string; target: string; count: number; inferred: number; nodeIds: string[] };
+
+export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "projects", depth = 1) {
+  const nodes = new Map(atlas.nodes.map(node => [node.id, node]));
+  const groups = new Map<string, ArchitectureGroup>();
+  const membership = new Map<string, string>();
+  for (const node of atlas.nodes) {
+    if (node.kind !== (mode === "projects" ? "project" : "file")) continue;
+    const folders = node.path.replaceAll("\\", "/").split("/").slice(0, -1);
+    const id = mode === "projects" ? node.id : folders.slice(0, Math.max(1, Math.min(depth, 3))).join("/") || ".";
+    if (!groups.has(id)) groups.set(id, { id, label: mode === "projects" ? node.path || node.label : id === "." ? "Repository root" : id, nodeIds: [], internal: 0 });
+    groups.get(id)!.nodeIds.push(node.id); membership.set(node.id, id);
+  }
+  if (mode === "folders") for (const node of atlas.nodes) if (node.kind === "directory") {
+    const id = node.path.replaceAll("\\", "/").split("/").slice(0, Math.max(1, Math.min(depth, 3))).join("/") || ".";
+    if (groups.has(id)) membership.set(node.id, id);
+  }
+  const links = new Map<string, ArchitectureLink>();
+  let unresolved = 0;
+  const seen = new Set<string>();
+  function connect(source: string, target: string, key: string, inferred: boolean, evidence: string[]) {
+    const from = membership.get(source), to = membership.get(target);
+    if (from === undefined || to === undefined || seen.has(key)) return;
+    seen.add(key);
+    if (from === to) { groups.get(from)!.internal++; return; }
+    const pair = JSON.stringify([from, to]);
+    if (!links.has(pair)) links.set(pair, { source: from, target: to, count: 0, inferred: 0, nodeIds: [] });
+    const link = links.get(pair)!; link.count++; if (inferred) link.inferred++;
+    link.nodeIds = [...new Set([...link.nodeIds, ...evidence])].slice(0, 48);
+  }
+  if (mode === "projects") {
+    for (const edge of atlas.relationships) if (edge.type === "DEPENDS_ON" && edge.resolution !== "unresolved") {
+      connect(edge.source, edge.target, JSON.stringify([edge.source, edge.target]), edge.resolution === "inferred", [edge.source, edge.target]);
+    }
+  } else {
+    const resolved = new Map<string, typeof atlas.relationships>();
+    for (const edge of atlas.relationships) if (edge.type === "RESOLVES_TO" && edge.resolution !== "unresolved" && ["file", "directory"].includes(nodes.get(edge.target)?.kind || "")) {
+      resolved.set(edge.source, [...(resolved.get(edge.source) || []), edge]);
+    }
+    for (const edge of atlas.relationships) if (edge.type === "IMPORTS") {
+      if (!(resolved.get(edge.target) || []).some(target => membership.has(target.target))) unresolved++;
+      for (const target of resolved.get(edge.target) || []) connect(edge.source, target.target,
+        JSON.stringify([edge.source, edge.target, target.target]), target.resolution === "inferred", [edge.source, edge.target, target.target]);
+    }
+  }
+  const degree = new Map<string, number>();
+  for (const link of links.values()) for (const id of [link.source, link.target]) degree.set(id, (degree.get(id) || 0) + link.count);
+  return { groups: [...groups.values()].map(group => ({ ...group, nodeIds: group.nodeIds.sort() }))
+    .sort((a, b) => (degree.get(b.id) || 0) - (degree.get(a.id) || 0) || a.label.localeCompare(b.label)),
+    links: [...links.values()].sort((a, b) => b.count - a.count || a.source.localeCompare(b.source) || a.target.localeCompare(b.target)),
+    unresolved: mode === "folders" ? unresolved : atlas.relationships.filter(edge => edge.resolution === "unresolved" && edge.type === "DEPENDS_ON").length };
+}
