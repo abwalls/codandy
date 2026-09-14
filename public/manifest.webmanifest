@@ -1,0 +1,12 @@
+{
+  "name": "Code Atlas",
+  "short_name": "Atlas",
+  "description": "Interactive repository intelligence",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07101c",
+  "theme_color": "#07101c",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

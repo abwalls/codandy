@@ -1,0 +1,110 @@
+/* Atlas stays the default. Brand presets adapt supporting shades for a dark work surface.
+   Forbright colors: https://maintenance.forbrightbank.com/ (public inline styles).
+   Tennessee colors: https://brand.utk.edu/standards/colors/ */
+:root {
+  --surface-1: #08101d;
+  --surface-2: #091523;
+  --surface-3: #0a1725;
+  --surface-highlight: #0a2028;
+  --surface-4: #0b1625;
+  --surface-5: #0c1726;
+  --surface-6: #0c1a2b;
+  --brand-100: #cffafe;
+  --brand-200: #a5f3fc;
+  --brand-300: #67e8f9;
+  --brand-400: #22d3ee;
+  --brand-500: #06b6d4;
+}
+
+:root[data-theme="forbright"] {
+  --background: #18272d;
+  --card: #1e3035;
+  --sidebar: #1b2e34;
+  --secondary: #28423f;
+  --muted: #28423f;
+  --accent: #2b443a;
+  --brand-100: #d9f3d6;
+  --brand-200: #bce6b9;
+  --brand-300: #41ac3a;
+  --brand-400: #52ce49;
+  --brand-500: #33812d;
+  --primary-foreground: #10200f;
+}
+
+:root[data-theme="tennessee"] {
+  --background: #282828;
+  --card: #333333;
+  --sidebar: #303030;
+  --secondary: #4b4b4b;
+  --muted: #4b4b4b;
+  --accent: #4b4b4b;
+  --brand-100: #ffffff;
+  --brand-200: #ffffff;
+  --brand-300: #ff8200;
+  --brand-400: #ff8200;
+  --brand-500: #ff8200;
+  --primary-foreground: #282828;
+  --color-slate-400: #cccccc;
+  --color-slate-500: #bbbbbb;
+  --color-slate-600: #aaaaaa;
+}
+
+:root[data-theme="violet"] {
+  --background: #140f24;
+  --card: #211a35;
+  --sidebar: #191329;
+  --secondary: #302448;
+  --muted: #302448;
+  --accent: #3a2b53;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --primary-foreground: #1b1035;
+}
+
+:root[data-theme="graphite"] {
+  --background: #17191c;
+  --card: #22262b;
+  --sidebar: #1c1f23;
+  --secondary: #30363d;
+  --muted: #30363d;
+  --accent: #3c444d;
+  --brand-100: #f5f7fa;
+  --brand-200: #e2e8f0;
+  --brand-300: #cbd5e1;
+  --brand-400: #a8b6c8;
+  --brand-500: #8495ac;
+  --primary-foreground: #17191c;
+}
+
+:root[data-theme]:not([data-theme="atlas"]) {
+  --surface-1: var(--background);
+  --surface-2: var(--sidebar);
+  --surface-3: var(--card);
+  --surface-4: var(--card);
+  --surface-5: var(--card);
+  --surface-6: var(--secondary);
+  --surface-highlight: var(--accent);
+  --primary: var(--brand-300);
+  --ring: var(--brand-300);
+  --chart-1: var(--brand-300);
+  --popover: var(--card);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-ring: var(--ring);
+  --color-slate-500: #9baab5;
+  --color-slate-600: #92a1ad;
+}
+
+@theme inline {
+  --color-cyan-100: var(--brand-100);
+  --color-cyan-200: var(--brand-200);
+  --color-cyan-300: var(--brand-300);
+  --color-cyan-400: var(--brand-400);
+  --color-cyan-500: var(--brand-500);
+}
+
+:root[data-theme="tennessee"] .atlas-text-glow { text-shadow: none; }

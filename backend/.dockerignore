@@ -1,0 +1,13 @@
+.venv
+.venv-managed
+.pytest_cache
+.ruff_cache
+__pycache__
+.workspaces
+smoke.py
+.env
+.env.*
+!.env.example
+tests
+
+.reports/

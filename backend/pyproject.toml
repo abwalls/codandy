@@ -1,0 +1,32 @@
+[project]
+name = "code-atlas-api"
+version = "0.1.0"
+description = "Static repository analysis and AI orchestration API for Code Atlas"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "uvicorn[standard]>=0.35,<1",
+  # Upper bound is deliberate. tree-sitter 0.26.0 corrupts memory when a node
+  # walk reads start_point/end_point and then named_children, segfaulting the
+  # analyzer process on ordinary sources. Re-verify with tests/test_grammars.py
+  # before raising this bound.
+  "tree-sitter>=0.25,<0.26",
+  "tree-sitter-c-sharp>=0.23,<0.24",
+  "tree-sitter-go>=0.25,<0.26",
+  "tree-sitter-javascript>=0.23,<0.24",
+  "tree-sitter-python>=0.25,<0.26",
+  "tree-sitter-typescript>=0.23,<0.24",
+]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.28,<1", "pytest>=8.4,<9", "ruff>=0.12,<1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv-managed"]
