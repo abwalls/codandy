@@ -301,3 +301,10 @@ separate because the consolidation was explicitly declined.
 - Working only from the fresh personal-account history. GitHub repository target: abwalls/codandy. Intended active local checkout: C:/Users/andre/source/repos/codandy. The old local folder is a backup; never merge or publish its Git history.
 - Fresh-clone validation uncovered the Vite helper in ignored build/ was absent from published source. Included the existing helper and its MIT license under scripts/ and updated the import, making clean-clone builds reproducible.
 - Validation: 134 backend tests, 23 frontend/API tests, TypeScript, ESLint, Ruff and production build pass. New settings tests verify legacy environment/.env compatibility and precedence of new names. Remaining final checks: local service restart with retained reports/auth, repository publication and hosted preview rename.
+
+### Codandy local runtime checkpoint
+
+- Published the tested rename to the public personal repository https://github.com/abwalls/codandy. Active clean checkout moved to C:/Users/andre/source/repos/codandy; the original code-atlas directory remains only as an archive/tool cache. Never merge its old Git history.
+- Created the new backend environment and recreated Windows pnpm links after the move. Backend and frontend now run from the Codandy folder on ports 8000 and 5173. Verified frontend HTTP 200/Codandy title, two retained reports through the frontend proxy, and connected Plus-plan AI status with the new local header.
+- Dedicated local Codex sign-in and report snapshots were preserved in ignored directories. Runtime uses CODANDY_* settings. The Python interpreter currently resides in the old directory's managed-tool cache; retain that archive until a future interpreter reinstall removes this dependency.
+- Renamed the existing owner-private Sites preview title/slug to Codandy. Public GitHub publication is complete; the hosted sample/frontend remains separate from the local Python/AI services. Final private preview deployment follows this checkpoint.
