@@ -118,3 +118,10 @@ The first usable whiteboard loop is implemented at `/whiteboard`: local drawing/
 - **Supporting:** GitHub private repositories, CI test and coverage evidence, and IDE links.
 
 It extends D1b/D1d, D3 and D6 on these terms: monitoring is read-only; credentials stay on the backend; every ticket write is reviewed and explicitly confirmed, and the AI can only draft; no webhooks. Astra implements it slice by slice and Claude reviews each slice. Decisions still waiting on Andrew are listed in §10 of that plan.
+
+
+### Architecture diagrams plan — 2026-09-15
+
+[docs/ARCHITECTURE-DIAGRAMS-PLAN.md](docs/ARCHITECTURE-DIAGRAMS-PLAN.md) goes beyond import relationships. It adds data-model ERDs, class and data-contract diagrams, sequence diagrams (static source order, observed stacks and traced spans, plus a static-versus-traced comparison), an endpoint-to-data map, API contract, deployment, messaging and frontend maps, and small illustrations across the app.
+
+New facts come from static extractors and live in a separate `structure-0.1` document, so atlas schema 0.2 stays unchanged. Declared schemas and manifests are labelled as declared, not deployed. Secret values are never kept. It supersedes V3/V4 in the visualization plan. The implementer and remaining decisions are listed in §11.

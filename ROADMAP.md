@@ -15,6 +15,7 @@ The debugging pivot replaces the old M0–M5 ordering. Detailed contracts and ac
 | D5 | Read-only MCP, IDE handoff, later trusted DAP experiment | Stable investigation services | Later |
 | D6 | Change verification, webhooks and team workflows | Evaluation data; hosting/auth where needed | Later |
 | I | Integrations: Sentry completion, OpenTelemetry and Datadog runtime evidence; Linear, ClickUp and Jira Cloud tickets; GitHub private repos, CI evidence, IDE links | Local-only foundations (I0); provider accounts for live gates | Planned in docs/INTEGRATIONS-PLAN.md (2026-09-15); Astra implements, Claude reviews; decisions pending in its §10 |
+| AD | Architecture diagrams: data-model ERDs, class/type and data-contract diagrams, static/observed/traced sequence diagrams, endpoint-to-data map, API contracts, deployment, messaging and frontend maps | V1/V2 merged; separate `structure-0.1` artifact (atlas 0.2 unchanged); INTEGRATIONS M2/M4 for traced sequences | Planned in docs/ARCHITECTURE-DIAGRAMS-PLAN.md (2026-09-15); implementer and decisions pending in its §11 |
 
 ## Work that remains useful
 
