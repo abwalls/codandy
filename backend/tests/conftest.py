@@ -20,6 +20,7 @@ def isolate_application_storage(tmp_path, monkeypatch):
     from app.main import settings
     monkeypatch.setattr(settings, "workspace_root", str(tmp_path / "workspaces"))
     monkeypatch.setattr(settings, "report_root", None)
+    monkeypatch.setattr(settings, "board_root", str(tmp_path / "boards"))
     monkeypatch.setattr(settings, "investigation_root", str(tmp_path / "investigations"))
     monkeypatch.setattr(settings, "codex_enabled", False)
     monkeypatch.setattr(settings, "codex_home", str(tmp_path / "codex"))

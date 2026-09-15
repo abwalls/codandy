@@ -434,3 +434,14 @@ test("architecture project map shows only actual project references", () => {
   assert.equal(graph.links.length, 1);
   assert.ok(graph.links.every(link => link.nodeIds.every(id => fixture.nodes.some(node => node.id === id && node.kind === "project"))));
 });
+
+
+test("whiteboard Python storage and frontend contracts agree", async () => {
+  const { boardSchema, reviewSchema } = await import("../lib/board-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.boards import BoardStore, Draft, packet; board = BoardStore(None).create(Draft(title='Contract board')); print(json.dumps({'board': board.model_dump(mode='json'), 'review': packet(board, 'interpret')}))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const data = JSON.parse(result.stdout);
+  assert.equal(boardSchema.parse(data.board).title, "Contract board");
+  assert.equal(reviewSchema.parse(data.review).revision, 1);
+  assert.equal(boardSchema.safeParse({ ...data.board, schema_version: "future" }).success, false);
+});

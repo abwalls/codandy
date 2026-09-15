@@ -102,3 +102,8 @@ Keep work scoped to this path until the first live issue-to-source flow is demon
 ### D1 implementation checkpoint — 2026-09-14
 
 Normalization contracts and synthetic fixtures now support Sentry REST events plus Python, JS and .NET stacks. `/debugging` adds a local import/inspection/redaction-review/export flow and backend-only Sentry Cloud configuration with explicit event retrieval. One GET per request is deliberate (manual retry, bounded deadline), below the three-attempt maximum. No live credential test has occurred. Project/issue browsing, revision-aware bindings, durable investigations and reviewed AI briefs are still pending; D1 is not complete.
+
+
+### Whiteboard delivery checkpoint — 2026-09-14
+
+The first usable whiteboard loop is implemented at `/whiteboard`: local drawing/CRUD/autosave, revision conflicts, reviewed text interpretation, user corrections, reviewed structured plans, saved plan versions, optional retained snapshot context, Markdown/ticket downloads, printable text and issue-draft copy. A live synthetic interpretation and plan both succeeded using the existing local Codex subscription connection. The longer W0–W5 gates are not wholly complete; see the implementation review in docs/WHITEBOARD-PLAN.md for the exact boundaries and remaining work.

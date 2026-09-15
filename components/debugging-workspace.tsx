@@ -54,7 +54,7 @@ export function DebuggingWorkspace() {
   }
 
   return <main className="atlas-grid min-h-svh bg-[var(--background)] p-5 text-foreground sm:p-8">
-    <header className="mx-auto mb-8 flex max-w-6xl flex-wrap items-center justify-between gap-4"><Link href="/" className="font-semibold">← Codandy</Link><ThemePicker /></header>
+    <header className="mx-auto mb-8 flex max-w-6xl flex-wrap items-center justify-between gap-4"><Link href="/" className="font-semibold">← Codandy</Link><Link href="/whiteboard" className="text-sm underline">Whiteboard</Link><ThemePicker /></header>
     <div className="mx-auto grid max-w-6xl gap-7 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="space-y-6">
         <InvestigationCases observation={observation} disabled={busy} onOpen={(value, id) => { setCaseId(id); setObservation(value); setReviewed(false); setError(""); }} />

@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     workspace_root: str = ".workspaces"
     # Opt-in local, single-process persistence for completed reports and captured source.
     report_root: str | None = None
+    board_root: str | None = ".boards"
     investigation_root: str | None = ".investigations"
     sentry_token: SecretStr = SecretStr("")
     sentry_host: Literal["sentry.io", "us.sentry.io", "de.sentry.io"] = "sentry.io"

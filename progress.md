@@ -411,3 +411,20 @@ separate because the consolidation was explicitly declined.
 
 - Andrew's decisions: the Whiteboard is the next track; repository link is optional; the AI provider is the local Codex subscription; outputs are Markdown plan.md and ticket.md, a printable report page, and a GitHub issue draft (copy only in v1). Drafted docs/WHITEBOARD-PLAN.md with milestones W0–W6 and updated the D4 entries in PLAN.md and ROADMAP.md.
 - Verified for the plan: Excalidraw 0.18.1 is MIT with a React ^19 peer and is client-only; vinext's dynamic shim supports ssr: false; fonts default to the esm.run CDN and must be self-hosted; restore, export and skeleton APIs exist (skeleton is beta); Codex app-server turn/start accepts text, image and localImage with a per-turn outputSchema, but image limits and model support are undocumented, so W0 must probe them. No code written; nothing committed for planning.
+
+
+### 2026-09-14 — Whiteboard implementation started
+
+- Reviewed Claude's WHITEBOARD-PLAN and preserved its review-fix branch plus uncommitted AGENTS/progress edits. Whiteboard is the active track; the earlier staged Sentry-browser script was never applied.
+- Added Excalidraw canvas, self-hosted fonts, local board storage with revision conflicts/atomic writes, deterministic scrubbed review packets, optional snapshot context, interpretation/plan stages through the existing Codex bridge, source-element citation validation, task dependency validation, saved plan versions and Markdown/ticket/print/issue-draft outputs.
+- Enhanced the plan with exact first-slice boundaries: text-only interpretation, explicit user corrections, proposed paths only, combined artifact limits, stale review/result rejection, and no claim of fully completed W0–W5.
+- Initial focused validation: 19 board/assistant tests passed; full validation and browser QA are in progress. No live model requests have been made.
+
+
+### 2026-09-14 — Whiteboard validation and live AI
+
+- Full backend suite passed: 255 tests. Personal report/case SHA-256 hashes were unchanged. TypeScript, lint and production build passed; the existing 29 frontend contracts passed, with a new Python/TypeScript board contract check added for final validation.
+- Headless Edge: create, labeled rectangle drawing, geometry/label presence in the review packet, autosave, JSON export, reopen with notes, and mobile no-overflow checks passed. Corrected the test to drag on the canvas rather than the properties panel. Synthetic test boards were deleted.
+- Font QA caught the package's CDN fallback: its runtime URLs include `fonts/`, so assets must live in `public/excalidraw-assets/fonts/`. Fixed the copy path; repeated labeled drawing produced zero external requests and zero page errors. The canvas remains lazy-loaded; the largest emitted lazy library chunk is about 1.82 MB uncompressed, and the observed build phases totaled about 21 seconds (no exact prior bundle-size baseline was captured).
+- Live subscription smoke used only a synthetic Task API board: `gpt-6-astra` completed both interpretation and plan stages; schema/citation checks and plan/ticket export passed. The synthetic board was deleted. No personal repository or board content was sent by this test.
+- Restarted the backend to load whiteboards and Claude's fixes (wrapper 36820, worker 17372). Whiteboard functionality is local at http://localhost:5173/whiteboard. Final checks/publication follow this checkpoint.

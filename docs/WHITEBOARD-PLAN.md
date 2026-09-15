@@ -293,3 +293,20 @@ can execute a generated `plan.md` with few follow-up questions.
 - **Bundle weight.** Excalidraw loads only on `/whiteboard`, never on the homescreen or report pages; W0 measures it.
 - **Cloud icon libraries.** Vendor architecture-icon terms vary, so v1 uses labelled shapes, with icons deferred to W6 after a licence review.
 - **Roadmap interaction.** Sentry D1 remains open. The live test and issue browsing continue when Andrew's account is ready. Evidence cards from the original D4 wait for W6.
+
+
+## Implementation review — 2026-09-14 (Codex)
+
+Approved direction: deliver the draw → reviewed interpretation → corrections → reviewed plan loop now. The original plan is useful, but the first implementation narrows several claims:
+
+- Vision probing is optional research, not a release prerequisite. The implemented packet is text-only; freehand/image interpretation remains unavailable and no subscription calls run automatically.
+- Board edits increment a content revision. Reviews include the board revision and, for planning, the exact prior interpretation. Saving or changing that interpretation invalidates the prior review. AI results are committed only if the content revision is still current.
+- One editable requirements/answers/corrections field supports clarification. Questions are visible and repeat avoidance is prompted; semantic deduplication and per-question structured answer records remain future work, not enforced claims.
+- All paths in generated tasks are explicitly proposed. Optional repository context lists a bounded set of indexed paths but does not assert generated path existence. Strong node-level repository citations remain W5 follow-up work.
+- The initial interpretation schema uses cited findings (drawn/answered/assumed), questions and assumptions. Detailed component/connection taxonomies and geometric containment inference remain later refinements.
+- Imports reject links, images, embeds and custom data; only element data is retained. Arbitrary Excalidraw appState is excluded. JSON round trips preserve accepted element content, title and notes, not editor UI state.
+- Plans and tickets are deterministic Markdown rendered from validated JSON. Printable text and issue-draft copy are included; a board image in the printable report is still pending.
+- The first canvas supports desktop drawing and responsive layout. Excalidraw is lazy-loaded, pinned at 0.18.1, with self-hosted fonts. Validate no external requests in browser QA.
+- Store bounds: 200 boards, 4 MiB per saved board including artifacts, 5,000 elements, 2,000 characters per text element, 20 combined saved AI artifacts, five requests per stage per revision. Tests must isolate board_root as well as reports and cases.
+
+Implementation checks and remaining work are recorded in progress.md. Do not mark W0–W5 wholly complete based on this first functional loop.

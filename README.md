@@ -153,3 +153,10 @@ The hosted page describes this local workflow; it does not forward telemetry to 
 Upload a project ZIP from the intake screen, or continue using GitHub URLs. ZIPs use the same static parser and report pipeline without executing project code. The default compressed limit is 100 MB; extraction also checks byte/file/depth limits, paths, links, excluded folders and sensitive filenames. Directory metadata is checked before allocating ZIP entries (50,000 entries / 8 MiB); split/ZIP64 directory archives are currently unsupported. Uploaded archives have no verified Git revision.
 
 The Architecture page now includes project/source-area dependency diagrams, folder depth, search, focused neighborhoods, zoom, evidence drilldowns and contextual questions. Desktop uses a directed graph; small screens use readable connected cards. Solid/dashed links distinguish resolved/inferred evidence. Groups are physical source areas, not asserted runtime services or architectural layers.
+
+
+### Whiteboards
+
+Open http://localhost:5173/whiteboard with the local Python backend running. Create a board and draw labeled shapes/arrows; changes autosave locally. Add requirements or answers beneath the canvas. Review the interpretation packet, connect ChatGPT if needed, and generate an interpretation. After correcting the board or answering questions, save and interpret the current revision again before reviewing a plan packet. Generated plans can be downloaded as `plan.md` and `ticket.md`, printed, or copied as an issue draft. Codandy never writes them into an analyzed repository automatically.
+
+`CODANDY_BOARD_ROOT` defaults to `.boards` under the backend working directory. Board JSON is private local data and ignored by Git. Export drafts before discarding unsaved edits; revision conflicts preserve the server version. Imports support bounded element-only Excalidraw JSON without images, links, embeds or custom data. Fonts are copied locally by the dev/build command. Vision interpretation, structured per-question history and embedded board pictures in printed reports are follow-up work. Hosted previews do not expose board storage or the local subscription connection.
