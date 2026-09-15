@@ -17,11 +17,27 @@ export type LayeredLayout = {
 };
 export type LayoutOptions = { nodeWidth?: number; nodeHeight?: number; gapX?: number; gapY?: number; padding?: number; sweeps?: number };
 
+type Endpoints = { source: string; target: string };
+export type LayerOrder<L extends Endpoints> = {
+  /** Links between known, distinct nodes. */
+  valid: L[];
+  /** Keys of depth-first back edges, which close cycles and are left out of layering. */
+  back: Set<string>;
+  cycles: string[][];
+  cycleOf: Map<string, number>;
+  /** Node and waypoint IDs per layer, in crossing-reduced order. */
+  rows: string[][];
+  waypoints: Set<string>;
+  /** Forward link key -> source, waypoints for each intermediate layer, target. */
+  chains: Map<string, string[]>;
+  connected: Set<string>;
+};
+
 const BEND = 56;
 
 export const linkKey = (link: Pick<ArchitectureLink, "source" | "target">) => JSON.stringify([link.source, link.target]);
 
-/** Tarjan's strongly connected components; a component of more than one group is a cycle. */
+/** Tarjan's strongly connected components; a component of more than one node is a cycle. */
 function stronglyConnected(ids: string[], adjacency: Map<string, string[]>) {
   let counter = 0;
   const index = new Map<string, number>();
@@ -59,15 +75,14 @@ function stronglyConnected(ids: string[], adjacency: Map<string, string[]>) {
 }
 
 /**
- * Deterministic layered layout for group dependency graphs.
+ * Layer assignment and crossing reduction shared by the group and record layouts.
  *
- * Importers sit above their dependencies. Depth-first back edges are left out of layering and
- * returned with `back: true`, so an import cycle is drawn as an explicit upward edge instead of
- * being hidden. Sized for tens of groups; adopt a layout library before rendering hundreds.
+ * Depth-first back edges are removed, the remaining acyclic graph gets longest-path layers
+ * (a link's source is always in an earlier layer than its target), long links pass through one
+ * waypoint per intermediate layer, and barycenter sweeps reorder each layer. Ties keep the input
+ * order, so results are deterministic.
  */
-export function layeredLayout(groups: ArchitectureGroup[], links: ArchitectureLink[], options: LayoutOptions = {}): LayeredLayout {
-  const { nodeWidth = 190, nodeHeight = 56, gapX = 40, gapY = 70, padding = 24, sweeps = 4 } = options;
-  const ids = groups.map(group => group.id);
+export function orderLayers<L extends Endpoints>(ids: string[], links: L[], sweeps = 4): LayerOrder<L> {
   const rank = new Map(ids.map((id, position) => [id, position]));
   const valid = links.filter(link => rank.has(link.source) && rank.has(link.target) && link.source !== link.target);
   const adjacency = new Map<string, string[]>(ids.map(id => [id, []]));
@@ -118,7 +133,7 @@ export function layeredLayout(groups: ArchitectureGroup[], links: ArchitectureLi
   const rows: string[][] = Array.from({ length: layer.size ? Math.max(...layer.values()) + 1 : 0 }, () => []);
   for (const id of ids) if (layer.has(id)) rows[layer.get(id)!].push(id);
   // Long edges pass through waypoints, one per intermediate layer. Waypoint IDs are tracked
-  // explicitly and never reuse a group ID, so no prefix convention can collide with a folder name.
+  // explicitly and never reuse a node ID, so no prefix convention can collide with a real name.
   const waypoints = new Set<string>();
   const above = new Map<string, string[]>();
   const below = new Map<string, string[]>();
@@ -156,6 +171,20 @@ export function layeredLayout(groups: ArchitectureGroup[], links: ArchitectureLi
     for (let row = 1; row < rows.length; row++) reorder(rows[row], above);
     for (let row = rows.length - 2; row >= 0; row--) reorder(rows[row], below);
   }
+  return { valid, back, cycles, cycleOf, rows, waypoints, chains, connected };
+}
+
+/**
+ * Deterministic layered layout for group dependency graphs.
+ *
+ * Importers sit above their dependencies. Depth-first back edges are left out of layering and
+ * returned with `back: true`, so an import cycle is drawn as an explicit upward edge instead of
+ * being hidden. Sized for tens of groups; adopt a layout library before rendering hundreds.
+ */
+export function layeredLayout(groups: ArchitectureGroup[], links: ArchitectureLink[], options: LayoutOptions = {}): LayeredLayout {
+  const { nodeWidth = 190, nodeHeight = 56, gapX = 40, gapY = 70, padding = 24, sweeps = 4 } = options;
+  const ids = groups.map(group => group.id);
+  const { valid, back, cycles, cycleOf, rows, waypoints, chains, connected } = orderLayers(ids, links, sweeps);
 
   const isWaypoint = (id: string) => waypoints.has(id);
   const widthOf = (id: string) => (isWaypoint(id) ? 18 : nodeWidth);
@@ -237,4 +266,134 @@ export function dependencyMatrix(groups: ArchitectureGroup[], links: Architectur
     .filter(link => index.has(link.source) && index.has(link.target) && link.source !== link.target)
     .map(link => ({ ...link, row: index.get(link.source)!, column: index.get(link.target)!, below: index.get(link.source)! > index.get(link.target)! }));
   return { order, cells, cycles, max: Math.max(0, ...cells.map(cell => cell.count)) };
+}
+
+// Record diagrams: tables and types drawn as boxes with one row per column or member.
+export const RECORD_HEADER = 40;
+export const RECORD_ROW = 22;
+const RECORD_FOOT = 8;
+const WAYPOINT_HEIGHT = 14;
+const ISOLATED_LABEL = 34;
+const SELF_LOOP = 34;
+
+export type RecordInput = { id: string; rows: number };
+export type RecordLinkInput = { id: string; source: string; target: string; sourceRow?: number | null; targetRow?: number | null };
+export type PlacedRecord = { id: string; x: number; y: number; width: number; height: number; layer: number; isolated: boolean };
+export type RecordEdge<L extends RecordLinkInput = RecordLinkInput> = { link: L; points: Point[]; back: boolean; self: boolean; cyclic: boolean };
+export type RecordLayout<L extends RecordLinkInput = RecordLinkInput> = {
+  records: PlacedRecord[];
+  edges: RecordEdge<L>[];
+  cycles: string[][];
+  /** Top of the area for records with no links to others in view, when there are also linked records. */
+  isolatedTop: number | null;
+  width: number;
+  height: number;
+};
+export type RecordOptions = { width?: number; gapX?: number; gapY?: number; padding?: number; sweeps?: number };
+
+export const recordHeight = (rows: number) => RECORD_HEADER + rows * RECORD_ROW + (rows ? RECORD_FOOT : 0);
+
+/**
+ * Left-to-right layered layout for record diagrams. A link's source sits in an earlier column
+ * than its target; a link that closes a cycle runs right to left with `back: true`, and a record
+ * linked to itself gets a loop on its right side. Links attach to a row when one is given,
+ * otherwise to the record's header.
+ */
+export function recordLayout<L extends RecordLinkInput>(records: RecordInput[], links: L[], options: RecordOptions = {}): RecordLayout<L> {
+  const { width: recordWidth = 250, gapX = 110, gapY = 28, padding = 24, sweeps = 4 } = options;
+  const ids = records.map(record => record.id);
+  const heights = new Map(records.map(record => [record.id, recordHeight(record.rows)]));
+  const usable = links.filter(link => heights.has(link.source) && heights.has(link.target));
+  const pairs = new Map<string, Endpoints>();
+  for (const link of usable) if (link.source !== link.target) pairs.set(linkKey(link), { source: link.source, target: link.target });
+  const order = orderLayers(ids, [...pairs.values()], sweeps);
+
+  const heightOf = (id: string) => (order.waypoints.has(id) ? WAYPOINT_HEIGHT : heights.get(id)!);
+  const columnHeight = (column: string[]) => column.reduce((sum, id) => sum + heightOf(id), 0) + Math.max(0, column.length - 1) * gapY;
+  const tallest = Math.max(0, ...order.rows.map(columnHeight));
+  const origin = new Map<string, Point>();
+  const placed: PlacedRecord[] = [];
+  order.rows.forEach((column, layer) => {
+    const x = padding + layer * (recordWidth + gapX);
+    let y = padding + (tallest - columnHeight(column)) / 2;
+    for (const id of column) {
+      origin.set(id, { x, y });
+      if (!order.waypoints.has(id)) placed.push({ id, x, y, width: recordWidth, height: heights.get(id)!, layer, isolated: false });
+      y += heightOf(id) + gapY;
+    }
+  });
+  let width = order.rows.length ? padding * 2 + order.rows.length * recordWidth + (order.rows.length - 1) * gapX : 0;
+  let height = order.rows.length ? padding * 2 + tallest : 0;
+
+  const isolated = ids.filter(id => !order.connected.has(id));
+  let isolatedTop: number | null = null;
+  if (isolated.length) {
+    const gap = 36;
+    const top = order.rows.length ? height + ISOLATED_LABEL : padding;
+    isolatedTop = order.rows.length ? height : null;
+    const columns = Math.min(isolated.length, Math.max(3, order.rows.length));
+    const bottoms = Array.from({ length: columns }, () => top);
+    for (const id of isolated) {
+      const column = bottoms.indexOf(Math.min(...bottoms));
+      const x = padding + column * (recordWidth + gap);
+      origin.set(id, { x, y: bottoms[column] });
+      placed.push({ id, x, y: bottoms[column], width: recordWidth, height: heights.get(id)!, layer: order.rows.length, isolated: true });
+      bottoms[column] += heights.get(id)! + gapY;
+    }
+    height = Math.max(...bottoms) - gapY + padding;
+    width = Math.max(width, padding * 2 + columns * recordWidth + (columns - 1) * gap);
+  }
+
+  const anchorY = (id: string, row: number | null | undefined) => {
+    const top = origin.get(id)!.y;
+    return row === null || row === undefined || row < 0 ? top + RECORD_HEADER / 2 : top + RECORD_HEADER + row * RECORD_ROW + RECORD_ROW / 2;
+  };
+  let loops = false;
+  const edges = usable.map(link => {
+    const source = origin.get(link.source)!;
+    const target = origin.get(link.target)!;
+    const sourceY = anchorY(link.source, link.sourceRow);
+    const targetY = anchorY(link.target, link.targetRow);
+    if (link.source === link.target) {
+      loops = true;
+      const end = Math.abs(targetY - sourceY) < 8 ? sourceY + 14 : targetY;
+      return { link, points: [{ x: source.x + recordWidth, y: sourceY }, { x: source.x + recordWidth, y: end }], back: false, self: true, cyclic: false };
+    }
+    const key = linkKey(link);
+    const cyclic = order.cycleOf.has(link.source) && order.cycleOf.get(link.source) === order.cycleOf.get(link.target);
+    if (order.back.has(key)) {
+      return { link, points: [{ x: source.x, y: sourceY }, { x: target.x + recordWidth, y: targetY }], back: true, self: false, cyclic };
+    }
+    const points: Point[] = [{ x: source.x + recordWidth, y: sourceY }];
+    for (const waypoint of order.chains.get(key)!.slice(1, -1)) {
+      const at = origin.get(waypoint)!;
+      points.push({ x: at.x, y: at.y + WAYPOINT_HEIGHT / 2 }, { x: at.x + recordWidth, y: at.y + WAYPOINT_HEIGHT / 2 });
+    }
+    points.push({ x: target.x, y: targetY });
+    return { link, points, back: false, self: false, cyclic };
+  });
+  return { records: placed, edges, cycles: order.cycles, isolatedTop, width: width + (loops ? SELF_LOOP + 8 : 0), height };
+}
+
+/** Horizontal S-curves between record sides; back edges leave leftward and self links loop right. */
+export function recordEdgePath(edge: RecordEdge) {
+  const [first, ...rest] = edge.points;
+  if (edge.self) {
+    const end = rest[0];
+    const out = first.x + SELF_LOOP;
+    return `M ${first.x} ${first.y} C ${out} ${first.y}, ${out} ${end.y}, ${end.x} ${end.y}`;
+  }
+  let path = `M ${first.x} ${first.y}`;
+  let previous = first;
+  for (const point of rest) {
+    const bend = Math.max(24, Math.abs(point.x - previous.x) / 2) * (edge.back ? -1 : 1);
+    path += ` C ${previous.x + bend} ${previous.y}, ${point.x - bend} ${point.y}, ${point.x} ${point.y}`;
+    previous = point;
+  }
+  return path;
+}
+
+/** Outward direction along x at each end of an edge: +1 leaves a record to the right. */
+export function recordEndDirections(edge: RecordEdge): { start: 1 | -1; end: 1 | -1 } {
+  return { start: edge.back ? -1 : 1, end: edge.self || edge.back ? 1 : -1 };
 }

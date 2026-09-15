@@ -10,7 +10,7 @@ async function proxy(request: Request) {
   if (!origin) return Response.json({ detail: "The analysis backend is not configured for this deployment." }, { status: 503 });
   const incoming = new URL(request.url);
   const path = incoming.pathname;
-  if (!/^\/api\/analyses(?:\/archive|\/[0-9a-f-]{36}(?:\/(?:atlas|events|source|dependencies))?)?$/i.test(path)) {
+  if (!/^\/api\/analyses(?:\/archive|\/[0-9a-f-]{36}(?:\/(?:atlas|events|source|dependencies|structure))?)?$/i.test(path)) {
     return Response.json({ detail: "Unknown analysis endpoint" }, { status: 404 });
   }
   const archive = path.toLowerCase() === "/api/analyses/archive";

@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { AnalysisAtlas, repositoryName } from "@/lib/analysis-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArchitectureMap } from "@/components/architecture-map";
+import { ArchitectureHub } from "@/components/architecture-hub";
 import { GroundedSection } from "@/components/grounded-report";
 import { AtlasComparison } from "@/components/atlas-comparison";
 import { DependencyImpact } from "@/components/dependency-impact";
@@ -82,7 +82,7 @@ function LiveReportContent({ atlas, jobId, onExit }: { atlas: AnalysisAtlas; job
               {filePaths.has(selected.path) ? <><DependencyImpact key={`${selected.kind}:${selected.path}`} atlas={atlas} path={selected.path} kind={selected.kind === "project" ? "project" : "file"} onInspect={setSelectedId} /><h4 className="mt-5 font-medium">Source</h4>
               <SourceView key={`${jobId}:${selected.path}`} jobId={jobId} path={selected.path} lines={selected.evidence[0]?.lines} /></>
                 : <p className="mt-5 text-sm text-slate-400">This node is not backed by a single source file.</p>}</> : <p className="text-sm text-slate-400">Select a node to inspect its source locations and relationships.</p>}</aside></div>
-        </> : reportSection ? <>{section === "Architecture" && <ArchitectureMap atlas={atlas} onInspect={inspect} />}<GroundedSection key={section} section={reportSection} atlas={atlas} onInspect={inspect} recommendations={section === "Recommended changes"} /></> : <section className="rounded-xl border border-white/10 bg-[var(--surface-4)] p-6"><p className="text-xs uppercase text-amber-300">Reanalysis needed</p><p className="mt-3 text-slate-400">This older atlas does not contain generated reports. Start a new analysis to build these sections.</p></section>}
+        </> : reportSection ? <>{section === "Architecture" && <ArchitectureHub key={jobId ?? "saved-atlas"} atlas={atlas} jobId={jobId} onInspect={inspect} />}<GroundedSection key={section} section={reportSection} atlas={atlas} onInspect={inspect} recommendations={section === "Recommended changes"} /></> : <section className="rounded-xl border border-white/10 bg-[var(--surface-4)] p-6"><p className="text-xs uppercase text-amber-300">Reanalysis needed</p><p className="mt-3 text-slate-400">This older atlas does not contain generated reports. Start a new analysis to build these sections.</p></section>}
       </div>
     </div>
     {metric && <OverviewDetails key={metric} metric={metric} total={atlas.counts[metric] ?? 0} rows={overviewNodes(atlas, metric)} onClose={() => setMetric(null)} onInspect={id => { setMetric(null); inspect(id); }} />}

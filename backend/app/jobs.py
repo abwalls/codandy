@@ -10,6 +10,7 @@ from app.models import AnalysisCreate, AnalysisJob, AtlasDocument, SourceFile
 from app.report_storage import ReportStorage, Snapshot
 from app.settings import Settings
 from app.sources import collect_sources
+from app.structure.models import StructureDocument, checked_structure
 from app.worker import analyze_isolated as analyze_repository
 
 
@@ -21,6 +22,8 @@ class JobStore:
         self.events: dict[UUID, list[str]] = {}
         self.results: dict[UUID, AtlasDocument] = {}
         self.sources: dict[UUID, dict[str, SourceFile]] = {}
+        # Reports saved before structure extraction existed have no entry here.
+        self.structures: dict[UUID, StructureDocument] = {}
         self.storage = ReportStorage(limits.report_root) if limits.report_root else None
         if self.storage:
             for snapshot in self.storage.load(limits.max_jobs):
@@ -29,6 +32,8 @@ class JobStore:
                 self.events[job_id] = snapshot.events
                 self.results[job_id] = snapshot.atlas
                 self.sources[job_id] = snapshot.sources
+                if snapshot.structure is not None:
+                    self.structures[job_id] = snapshot.structure
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="atlas")
 
     def close(self):
@@ -49,6 +54,7 @@ class JobStore:
                 del self.jobs[oldest], self.events[oldest]
                 self.results.pop(oldest, None)
                 self.sources.pop(oldest, None)
+                self.structures.pop(oldest, None)
             job = AnalysisJob()
             self.jobs[job.id] = job
             self.events[job.id] = [job.model_dump_json()]
@@ -89,8 +95,9 @@ class JobStore:
                 url, ref = request.source.url, request.source.ref
             with workspace as root:
                 self.update(job_id, "detecting", 30)
-                atlas = analyze_repository(root, url, ref, self.limits,
-                                           lambda phase, value: self.update(job_id, phase, value))
+                atlas, structure = analyze_repository(
+                    root, url, ref, self.limits,
+                    lambda phase, value: self.update(job_id, phase, value))
                 if archive:
                     # An upload has no trustworthy Git revision, so none is reported. Archive
                     # .git directories are never extracted, let alone read.
@@ -119,12 +126,16 @@ class JobStore:
                 payload = atlas.model_dump_json(indent=2)
                 (artifact / "atlas.json").write_text(payload, encoding="utf-8")
                 validated = AtlasDocument.model_validate_json(payload)
+                structure = checked_structure(structure, validated)
+                (artifact / "structure.json").write_text(structure.model_dump_json(indent=2),
+                                                         encoding="utf-8")
             with self.lock:
                 if self.storage:
                     completed = self.jobs[job_id].model_copy(update={
                         "phase": "complete", "progress": 100, "status": "complete"})
                     try:
                         self.storage.save(Snapshot(job=completed, atlas=validated, sources=sources,
+                            structure=structure,
                             events=[*self.events[job_id], completed.model_dump_json()]))
                     except OSError as exc:
                         raise IngestionError(
@@ -132,6 +143,7 @@ class JobStore:
                             "permissions, free space, and the 128 MB snapshot limit.") from exc
                 self.results[job_id] = validated
                 self.sources[job_id] = sources
+                self.structures[job_id] = structure
                 self.update(job_id, "complete", 100, status="complete")
         except IngestionError as exc:
             self.update(job_id, "failed", 0, status="failed", error=str(exc))
@@ -176,7 +188,12 @@ class JobStore:
             self.events.pop(job_id, None)
             self.results.pop(job_id, None)
             self.sources.pop(job_id, None)
+            self.structures.pop(job_id, None)
             return True
+
+    def structure(self, job_id: UUID) -> StructureDocument | None:
+        with self.lock:
+            return self.structures.get(job_id)
 
     def source(self, job_id: UUID, path: str) -> SourceFile | None:
         """Only paths captured during analysis are addressable; no disk access here."""

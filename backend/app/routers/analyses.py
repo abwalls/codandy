@@ -15,6 +15,7 @@ from app.dependency_checks import check_dependency, slots
 from app.ingestion import IngestionError
 from app.jobs import JobStore
 from app.models import AnalysisCreate, AnalysisJob, AtlasDocument, SourceFile
+from app.structure.models import StructureDocument
 
 router = APIRouter(prefix="/analyses", tags=["analyses"])
 
@@ -87,6 +88,19 @@ async def get_atlas(analysis_id: UUID, request: Request) -> AtlasDocument:
     if atlas is None:
         raise HTTPException(409, job.error or "Atlas is not ready")
     return atlas
+
+
+@router.get("/{analysis_id}/structure", response_model=StructureDocument)
+async def get_structure(analysis_id: UUID, request: Request) -> StructureDocument:
+    job = await get_analysis(analysis_id, request)
+    jobs = store(request)
+    if jobs.result(analysis_id) is None:
+        raise HTTPException(409, job.error or "Atlas is not ready")
+    structure = jobs.structure(analysis_id)
+    if structure is None:
+        raise HTTPException(404, "Data model diagrams were not extracted for this report. "
+                                 "Run the analysis again to build them.")
+    return structure
 
 
 @router.delete("/{analysis_id}")

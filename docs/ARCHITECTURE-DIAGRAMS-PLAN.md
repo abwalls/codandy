@@ -1,6 +1,6 @@
 # Architecture diagrams plan: data models, sequences, deployment and flows
 
-**Status:** draft for review, 2026-09-15.
+**Status:** plan dated 2026-09-15. AD0, AD1 and parts of AD2 and AD6 are implemented on branch `claude/architecture-diagrams`; see §13.
 **Written by:** Claude, at Andrew's request.
 **Implementer:** to be decided (§11).
 **Relationship to other plans:**
@@ -214,16 +214,30 @@ Operations are classified as read, write or unknown by method name.
 
 A separate artifact, `.codandy/structure.json`, written next to `atlas.json`. It's served at `GET /api/analyses/{id}/structure`, retained and evicted with the report, and included in persistence snapshots.
 
+As implemented for AD0–AD2 (`backend/app/structure/models.py`, mirrored by `lib/structure-api.ts`):
+
 ```
 structure-0.1
-  snapshot: { analysis_id, atlas_schema: "0.2", commit? }
-  entities[]:      { id, name, kind: table|view|document|model, source: prisma|sql|sqlalchemy|django|drizzle|typeorm|efcore|…,
-                     table?, schema?, fields[] { name, type, nullable?, primary?, unique?, default_kind?, evidence },
-                     evidence[] }
-  entity_links[]:  { from{entity, fields[]}, to{entity?, fields[]}, cardinality: one|many|unknown (each end),
-                     basis: declared|orm_relation|name_convention, resolution: resolved|unresolved, evidence[] }
-  types[]:         { id, name, language, kind: class|interface|record|struct|model|schema, members[] { name, type_text }, evidence }
-  type_links[]:    { from, to, kind: extends|implements|has_field_of_type|embeds, resolution, evidence[] }
+  schema_version: "structure-0.1", atlas_schema: "0.2"
+  sources[]:       { id, kind: prisma|sql|sqlalchemy|django, root (nearest project directory, "" = repository root), files[] }
+  entities[]:      { id, source_id, name, table?, namespace?, kind: table|view|model,
+                     fields[] { name, type, primary, unique, foreign, nullable?, line? },
+                     omitted_fields, node_id? (atlas declaration node), evidence[] }
+  entity_links[]:  { id, source_id,
+                     source { entity, name, fields[], cardinality: one|many|unknown, optional? }   (holds the reference)
+                     target { entity?, name, fields[], cardinality, optional? }                    (is referenced)
+                     label, basis: declared|orm_relation, resolution: resolved|unresolved|ambiguous, evidence[] }
+  types[]:         { id, name, language: Python|TypeScript, kind: pydantic|dataclass|typed_dict|interface|type_alias,
+                     path, members[] { name, type, line? }, omitted_members, node_id?, evidence[] }
+  type_links[]:    { id, source, target, kind: extends|field_type, member?, resolution: resolved|inferred, evidence[] }
+  counts{}, limitations[]
+```
+
+- `target.cardinality` is how many referenced rows one referencing row relates to; `source.cardinality` is the reverse. Only resolved links name `target.entity`, and a link never crosses schema sources.
+- `name_convention` links are not produced yet (decision 4 in §11).
+- Later milestones add optional top-level sections without breaking 0.1 readers:
+
+```
   contracts:       { openapi[], graphql[], protobuf[] }    operations, schemas, refs; each with evidence
   deployment:      { services[] { id, name, source: dockerfile|compose|kubernetes|terraform, image?, ports[], env_keys[] },
                      links[] { from, to, kind: depends_on|selects|routes_to|references|network, evidence },
@@ -231,7 +245,6 @@ structure-0.1
   messaging:       { channels[] { name, kind }, publishers[] { channel, function_node }, subscribers[] { channel, function_node } }
   data_access[]:   { function_node, entity, operation: read|write|unknown, basis, evidence }
   frontend:        { routes[] { path, file_node, kind: page|layout|route }, component_links[] { from, to, evidence } }
-  limitations[], truncations[], omissions{…}
 ```
 
 - **Evidence:** every `evidence` entry is `{ path, lines, reason }`, and paths must exist as atlas file nodes. `function_node` must be an atlas node ID.
@@ -393,4 +406,17 @@ All checked 2026-09-14/15; reconfirm at adoption.
 | VISUALIZATION-PLAN V7 (Open in Whiteboard) | Delivered through **AD4** (deployment first), then other diagrams |
 | INTEGRATIONS-PLAN M2/M4 (OpenTelemetry, Datadog traces) | Required by **AD8** |
 | INTEGRATIONS-PLAN T4 (ticket entry points) | Tickets can embed Mermaid exports from any diagram |
+
+---
+
+## 13. Implementation status
+
+**2026-09-15, Claude, branch `claude/architecture-diagrams`.** The branch is stacked on `claude/visual-atlas` and is awaiting Astra's review. Handoff: `CLAUDE-HANDOFF-2026-09-15.md`.
+
+| Milestone | Done | Not yet |
+|---|---|---|
+| AD0 | `structure-0.1` contract; extraction in the analysis worker with its own time share, never failing the atlas; snapshot persistence; `GET /api/analyses/{id}/structure`; Architecture switcher (Dependencies, Data model, Data contracts); evidence panels; Mermaid copy | `@xyflow/react` spike. Diagrams use an in-house SVG record layout shared with V1/V2, so decision 2 is still open. |
+| AD1 | Prisma (multi-file, implicit many-to-many, `@@map`/`@@schema`, datasource blocks never read); SQL DDL in path order (CREATE/ALTER/DROP, inline and table constraints, quoted identifiers, dollar-quoted bodies, string contents withheld); ERD with crow's-foot ends, schema selector, search, Keys only, focus, unresolved stubs | Per-migration history view |
+| AD2 (part) | Pydantic, dataclasses, TypedDict, TypeScript interfaces and object type aliases; `extends` and member-type links resolved by same file, then resolved local import, then unique name (inferred); folder view with stubs for types elsewhere; Mermaid `classDiagram` | C#, Go and JavaScript classes, zod, `implements`, methods |
+| AD6 (part) | SQLAlchemy (`__tablename__`, `Column`/`mapped_column`, `Mapped[]` nullability, mixins, `ForeignKey`, `relationship(secondary=)`) and Django (fields, FK/OneToOne/M2M, abstract parents, implicit `id`, `db_table`, `AUTH_USER_MODEL` kept unresolved), each drawn as its own schema source | Merging the same table across sources; Drizzle, TypeORM, EF Core |
 | WHITEBOARD-PLAN W6 (AI edits via element skeletons) | Shares the diagram-to-board conversion |

@@ -436,3 +436,33 @@ separate because the consolidation was explicitly declined.
 - V0: the analyzer and ZIP intake now skip __pycache__, .pytest_cache, .mypy_cache and .ruff_cache. New lib/architecture-layout.ts provides a deterministic layered layout (depth-first back edges, longest-path layers, virtual waypoints, barycenter sweeps, Tarjan cycles, isolated row) and a layer-ordered dependency matrix where back edges always fall below the diagonal. architectureMap accepts expanded folders.
 - V1/V2: the Architecture map replaces the 10-group ring with Layered and Matrix views (40/60-group budgets, 12 on mobile), folder split and collapse, a cycle notice and a matrix cell evidence panel. No new dependencies.
 - Verification: 256 backend tests, ruff, 34 contracts (4 new), tsc, changed-file ESLint and build passed; personal report, case and board hashes unchanged. On Codandy's atlas: sensible layers and no cycles; 40/60-group layouts take 4/16 ms. DOM-level browser QA passed for layered, focus, split, matrix and cell evidence, with no console errors. Not verified: pixel screenshots, because the Chrome tab was hidden and paint was paused (not an app defect), other themes, and a real repository with folder-level cycles. Handoff: CLAUDE-VISUALS-2026-09-15.md.
+
+
+### 2026-09-15 - Data model and contract diagrams, AD0-AD2 (Claude implements, Astra reviews)
+
+- **Plans on main (not pushed):**
+  - Committed the integrations plan (c4c6782) and the architecture diagrams plan (8d334c5).
+  - Implementation continues on branch claude/architecture-diagrams, stacked on claude/visual-atlas with main merged in.
+- **Backend:**
+  - New `backend/app/structure/` builds `structure-0.1` in the analysis worker after the atlas.
+  - Data models come from Prisma, SQL DDL (path-ordered CREATE/ALTER/DROP), SQLAlchemy and Django. Data contracts come from Pydantic, dataclasses, TypedDicts and TypeScript interfaces and object aliases.
+  - Only atlas file nodes are read, as text.
+  - Budgets: 2,000 entities, 5,000 types and 300 fields each. Diagrams get 85% of the analysis deadline, and any failure becomes a limitation, not a failed report.
+  - The result is written to `.codandy/structure.json`, persisted in snapshots (optional, so older reports still load) and served at `GET /api/analyses/{id}/structure`. The hosted proxy allows the path.
+- **Frontend:**
+  - `lib/structure-api.ts` is the zod mirror of the contract.
+  - `lib/structure-diagram.ts` builds the ERD and contract views and the Mermaid `erDiagram`/`classDiagram` export with sanitized identifiers.
+  - `lib/architecture-layout.ts` factors out `orderLayers`, with V1/V2 output unchanged, and adds a left-to-right record layout.
+  - The Architecture tab now switches between Dependencies, Data model and Data contracts:
+    - crow's-foot ends
+    - schema and folder selectors
+    - search, focus and Keys only
+    - stubs for undeclared or elsewhere types
+    - evidence buttons
+    - Ask scopes
+    - mobile lists
+- **Verification:**
+  - 267 backend tests (11 new), ruff, 40 contracts (6 new), tsc, changed-file ESLint and build all pass.
+  - Personal report, case and board hashes are unchanged.
+  - On a source copy of Codandy: 88 contract types and 92 links in 0.33 s; no database schemas, as expected.
+- **Not verified:** browser rendering and interaction of the new views (the running :8000 backend was not restarted, so it lacks the endpoint), other themes, and large real schemas. Handoff: CLAUDE-HANDOFF-2026-09-15.md.

@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, ValidationError
 
 from app.models import AnalysisJob, AtlasDocument, SourceFile
+from app.structure.models import StructureDocument, validate_against_atlas
 
 MAX_SNAPSHOT_BYTES = 128 * 1024 * 1024
 
@@ -18,6 +19,8 @@ class Snapshot(BaseModel):
     atlas: AtlasDocument
     sources: dict[str, SourceFile]
     events: list[str]
+    # Optional so reports saved before diagrams existed still restore.
+    structure: StructureDocument | None = None
 
 
 class ReportStorage:
@@ -69,6 +72,12 @@ class ReportStorage:
                     continue
                 if snapshots[-1] != snapshot.job:
                     continue
+                if snapshot.structure is not None:
+                    try:
+                        validate_against_atlas(snapshot.structure, snapshot.atlas)
+                    except ValueError:
+                        # The report stays usable; only its diagrams are withheld.
+                        snapshot.structure = None
                 if len(restored) < limit:
                     restored.append(snapshot)
                 else:

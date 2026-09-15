@@ -125,3 +125,13 @@ It extends D1b/D1d, D3 and D6 on these terms: monitoring is read-only; credentia
 [docs/ARCHITECTURE-DIAGRAMS-PLAN.md](docs/ARCHITECTURE-DIAGRAMS-PLAN.md) goes beyond import relationships. It adds data-model ERDs, class and data-contract diagrams, sequence diagrams (static source order, observed stacks and traced spans, plus a static-versus-traced comparison), an endpoint-to-data map, API contract, deployment, messaging and frontend maps, and small illustrations across the app.
 
 New facts come from static extractors and live in a separate `structure-0.1` document, so atlas schema 0.2 stays unchanged. Declared schemas and manifests are labelled as declared, not deployed. Secret values are never kept. It supersedes V3/V4 in the visualization plan. The implementer and remaining decisions are listed in §11.
+
+
+### Data model and contract diagrams checkpoint — 2026-09-15
+
+On branch `claude/architecture-diagrams`, awaiting Astra's review, the analysis worker now also builds `.codandy/structure.json` (`structure-0.1`) from indexed files, and the Architecture tab gains Data model and Data contracts views beside the dependency map.
+
+- **Data model (ERDs):** Prisma, SQL DDL, SQLAlchemy and Django declarations.
+- **Data contracts:** Pydantic models, dataclasses, TypedDicts, TypeScript interfaces and object type aliases.
+
+Extraction is static and bounded. It has its own share of the analysis time budget and is withheld with a visible limitation rather than failing the report. Reports saved earlier still open; their diagrams need a new analysis. Status by milestone is in §13 of the diagrams plan.

@@ -18,9 +18,11 @@ def crash(*_):
 
 def test_real_isolated_parser(tmp_path):
     (tmp_path / "index.ts").write_text("export function run() {}")
-    atlas = analyze_isolated(tmp_path, "https://github.com/org/repo.git", None,
-                             Settings(), lambda *_: None)
+    (tmp_path / "schema.sql").write_text("CREATE TABLE users (id int PRIMARY KEY);")
+    atlas, structure = analyze_isolated(tmp_path, "https://github.com/org/repo.git", None,
+                                        Settings(), lambda *_: None)
     assert atlas.counts["symbols"] == 1
+    assert [entity.table for entity in structure.entities] == ["users"]
 
 
 @pytest.mark.parametrize(("worker", "message"), [(hang, "timed out"),

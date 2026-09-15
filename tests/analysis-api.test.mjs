@@ -1,5 +1,7 @@
 import { architectureMap } from "../lib/architecture-map.ts";
-import { dependencyMatrix, edgePath, layeredLayout } from "../lib/architecture-layout.ts";
+import { dependencyMatrix, edgePath, layeredLayout, recordEdgePath, recordLayout } from "../lib/architecture-layout.ts";
+import { structureSchema } from "../lib/structure-api.ts";
+import { contractAreas, contractsView, erdView, mermaidClassDiagram, mermaidErDiagram } from "../lib/structure-diagram.ts";
 import { observationSchema } from "../lib/debugging-api.ts";
 import { dependencyUsage } from "../lib/dependency-usage.ts";
 import { connectionSchema, loginSchema, assistantApi } from "../lib/assistant-api.ts";
@@ -505,4 +507,135 @@ test("architecture map splits an expanded folder into its subfolders", () => {
   const expanded = architectureMap(sample, "folders", 1, new Set(["components"]));
   assert.deepEqual(expanded.groups.map(group => group.id).sort(), ["components", "components/ui", "lib"]);
   assert.deepEqual(expanded.links.map(link => [link.source, link.target]).sort(), [["components", "components/ui"], ["components/ui", "lib"]]);
+});
+
+const structureGenerated = spawnSync(python, ["-c", `
+import tempfile
+from pathlib import Path
+from app.analyzer import analyze_repository
+from app.settings import Settings
+from app.structure.extract import extract_structure
+files = {
+    'db/schema.sql': 'CREATE TABLE users (id int PRIMARY KEY, email text NOT NULL UNIQUE);\\nCREATE TABLE orders (id int PRIMARY KEY, user_id int NOT NULL REFERENCES users(id), parent_id int REFERENCES orders(id));\\nCREATE TABLE reviews (id int PRIMARY KEY, author_id int REFERENCES accounts(id));\\nCREATE TABLE \`x"; click\` (id int);\\nCREATE TABLE settings (key text);\\n',
+    'api/models.py': 'from pydantic import BaseModel\\n\\nclass Base(BaseModel):\\n    id: int\\n\\nclass Money(Base):\\n    amount: str\\n\\nclass Order(Base):\\n    total: Money\\n    note: str | None = None\\n',
+    'api/extra/refund.py': 'from pydantic import BaseModel\\n\\nclass Refund(BaseModel):\\n    amount: Money\\n',
+    'web/types.ts': 'export type Customer = { id: string; orders: OrderSummary[] };\\nexport interface OrderSummary { id: string; customer: Customer }\\n',
+}
+with tempfile.TemporaryDirectory() as folder:
+    root = Path(folder)
+    for name, text in files.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text(text, encoding='utf-8')
+    settings = Settings()
+    atlas = analyze_repository(root, 'https://github.com/org/repo.git', None, settings, lambda *_: None)
+    print(extract_structure(root, atlas, settings).model_dump_json())
+`], { cwd: resolve("backend"), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+assert.equal(structureGenerated.status, 0, structureGenerated.stderr);
+const structureFixture = JSON.parse(structureGenerated.stdout);
+const sqlSource = document => document.sources.find(source => source.kind === "sql");
+const tableId = (document, table) => document.entities.find(entity => entity.table === table).id;
+
+test("frontend accepts a Python-generated structure document and rejects dangling references", () => {
+  const structure = structureSchema.parse(structureFixture);
+  assert.deepEqual(structure.entities.map(entity => entity.table).sort(), ["orders", "reviews", "settings", "users", 'x"; click']);
+  assert.equal(structureSchema.safeParse({ ...structureFixture, schema_version: "structure-9" }).success, false);
+  const dangling = structuredClone(structureFixture);
+  const resolved = dangling.entity_links.find(link => link.resolution === "resolved");
+  resolved.target.entity = "entity:missing";
+  assert.equal(structureSchema.safeParse(dangling).success, false);
+  const stray = structuredClone(structureFixture);
+  stray.type_links[0].target = "type:missing";
+  assert.equal(structureSchema.safeParse(stray).success, false);
+});
+
+test("ERD view puts referenced tables left of the tables that reference them", () => {
+  const structure = structureSchema.parse(structureFixture);
+  const source = sqlSource(structure);
+  const view = erdView(structure, source.id);
+  const stub = view.records.find(record => record.stub);
+  assert.deepEqual([stub.title, stub.refId], ["accounts", null]);
+  const records = view.records.map(record => ({ id: record.id, rows: record.rows.length }));
+  const layout = recordLayout(records, view.links);
+  const x = id => layout.records.find(record => record.id === id).x;
+  assert.ok(x(tableId(structure, "users")) < x(tableId(structure, "orders")));
+  assert.ok(x(stub.id) < x(tableId(structure, "reviews")));
+  assert.equal(layout.edges.find(edge => edge.self).link.source, tableId(structure, "orders"));
+  const user = view.links.find(link => link.source === tableId(structure, "users"));
+  assert.deepEqual([user.start, user.end], [{ cardinality: "one", optional: false }, { cardinality: "many", optional: true }]);
+  assert.equal(view.records.find(record => record.id === tableId(structure, "orders")).rows[user.targetRow].name, "user_id");
+  assert.ok(layout.records.every(record => record.x >= 0 && record.y >= 0 && record.x + record.width <= layout.width && record.y + record.height <= layout.height));
+  assert.deepEqual(recordLayout(records, view.links), layout);
+  const focused = erdView(structure, source.id, { focus: tableId(structure, "users") });
+  assert.deepEqual(focused.records.map(record => record.title).sort(), ["orders", "users"]);
+  const keys = erdView(structure, source.id, { keysOnly: true }).records.find(record => record.title === "users");
+  assert.deepEqual([keys.rows.map(row => row.name), keys.hiddenRows], [["id"], 1]);
+});
+
+test("record layout routes cycles right to left and long links through waypoints", () => {
+  const records = ["a", "b", "c", "d"].map(id => ({ id, rows: 2 }));
+  const link = (source, target) => ({ id: `${source}-${target}`, source, target });
+  const layout = recordLayout(records, [link("a", "b"), link("b", "c"), link("a", "c"), link("c", "a")]);
+  const at = id => layout.records.find(record => record.id === id);
+  assert.deepEqual(layout.cycles, [["a", "b", "c"]]);
+  const back = layout.edges.find(edge => edge.back);
+  assert.deepEqual([back.link.id, back.points[0].x, back.points[1].x], ["c-a", at("c").x, at("a").x + at("a").width]);
+  assert.equal(layout.edges.find(edge => edge.link.id === "a-c").points.length, 4);
+  assert.equal(at("d").isolated, true);
+  assert.notEqual(layout.isolatedTop, null);
+  assert.match(recordEdgePath(back), /^M [\d.]+ [\d.]+ C /);
+});
+
+test("Mermaid exports use safe identifiers and follow declared cardinality", () => {
+  const structure = structureSchema.parse(structureFixture);
+  const source = sqlSource(structure);
+  const text = mermaidErDiagram(structure.entities.filter(entity => entity.source_id === source.id), structure.entity_links.filter(link => link.source_id === source.id));
+  assert.match(text, /^erDiagram\n/);
+  assert.match(text, /\n {4}users \|\|--o\{ orders : "user_id"\n/);
+  assert.match(text, /\n {4}orders \|o--o\{ orders : "parent_id"\n/);
+  assert.match(text, /\n {4}%% not drawn: reviews references accounts \(unresolved\)\n/);
+  assert.match(text, /\n {4}x_click \{\n {8}int id\n/);
+  assert.match(text, /\n {8}text email UK\n/);
+  assert.equal(text.includes('";'), false);
+  const classes = mermaidClassDiagram(structure.types, structure.type_links);
+  assert.match(classes, /\n {4}Base <\|-- Money\n/);
+  assert.match(classes, /\n {4}Order --> Money : total\n/);
+  assert.match(classes, /\n {4}Refund \.\.> Money : amount\n/);
+  assert.match(classes, /\n {8}str_None note\n/);
+});
+
+test("contract view narrows to a folder and keeps types it references elsewhere visible", () => {
+  const structure = structureSchema.parse(structureFixture);
+  assert.deepEqual(contractAreas(structure).map(area => [area.id, area.count]), [["api", 3], ["web", 2], ["api/extra", 1]]);
+  const models = contractsView(structure, { area: "api" });
+  assert.deepEqual(models.records.map(record => record.title).sort(), ["Base", "Money", "Order"]);
+  const order = models.records.find(record => record.title === "Order");
+  const total = models.links.find(link => link.source === order.id && link.kind === "field");
+  assert.equal(order.rows[total.sourceRow].name, "total");
+  assert.equal(contractsView(structure, { area: "api", inheritance: false }).links.some(link => link.kind === "extends"), false);
+  const extra = contractsView(structure, { area: "api/extra" });
+  assert.deepEqual(extra.records.map(record => [record.title, record.stub]), [["Refund", false], ["Money", true]]);
+  assert.equal(extra.links[0].dashed, true);
+  const customer = structure.types.find(type => type.name === "Customer").id;
+  assert.deepEqual(contractsView(structure, { focus: customer }).records.map(record => record.title).sort(), ["Customer", "OrderSummary"]);
+});
+
+test("hosted proxy forwards structure requests without the caller's query string", async () => {
+  const oldFetch = globalThis.fetch;
+  const oldOrigin = process.env.CODANDY_API_URL;
+  const id = "00000000-0000-4000-8000-000000000000";
+  process.env.CODANDY_API_URL = "https://backend.example.com";
+  try {
+    globalThis.fetch = async url => {
+      assert.equal(url.pathname, `/api/analyses/${id}/structure`);
+      assert.equal(url.search, "");
+      return Response.json(structureFixture);
+    };
+    const response = await GET(new Request(`https://atlas.example.com/api/analyses/${id}/structure?token=leak`));
+    assert.equal(response.status, 200);
+    assert.equal(structureSchema.safeParse(await response.json()).success, true);
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldOrigin === undefined) delete process.env.CODANDY_API_URL;
+    else process.env.CODANDY_API_URL = oldOrigin;
+  }
 });
