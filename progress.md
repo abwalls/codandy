@@ -481,3 +481,9 @@ separate because the consolidation was explicitly declined.
 - Edge QA passed ERD rendering in all five themes, keyboard selection, desktop/mobile data contracts, OTLP import/filter/selection/redaction/reviewed export, and whiteboard drawing/label/notes autosave/reopen/export. Whiteboard loaded without external asset requests. Synthetic QA reports and boards were removed by ID/title-scoped cleanup.
 - Updated the roadmap and agent guide to replace stale W0-not-started status. Review handoffs: ASTRA-DIAGRAMS-CR-2026-09-15.md and ASTRA-INTEGRATIONS-M2-2026-09-15.md.
 - Next boundary: provider foundation and reviewed Linear ticket creation, plus observed sequence views. Jira, ClickUp, Datadog, live OTLP collection, image-based whiteboard interpretation and autonomous implementation are not complete. Publication follows this validated checkpoint.
+
+### 2026-09-15 — Published and stopping checkpoint
+
+- Reviewed changes fast-forwarded into main and pushed to abwalls/codandy. Both new commits use abwalls and the approved GitHub noreply address. Active checkout is C:/Users/andre/source/repos/codandy; the code-atlas directory is an archive, not the working repo.
+- Private Sites v6 successfully deployed at https://codandy.abwalls.chatgpt.site from a9662f971b410b1889f9b9375bda43a0f6434034. Access remains owner-only. Hosted UI does not connect to the local Python/Codex services; use http://localhost:5173 for whiteboard and trace workflows. The browser-handoff tool is unavailable in this session; deployment succeeded independently.
+- Backend and frontend remain running for local testing. Next work starts with docs/INTEGRATIONS-PLAN.md I0/T0/T1 (provider foundation and reviewed Linear ticket creation) and observed sequence visualization; see the two Astra review handoffs for boundaries and validation. This final documentation-only checkpoint follows the published application source.
