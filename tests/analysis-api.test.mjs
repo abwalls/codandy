@@ -1,4 +1,5 @@
 import { architectureMap } from "../lib/architecture-map.ts";
+import { dependencyMatrix, edgePath, layeredLayout } from "../lib/architecture-layout.ts";
 import { observationSchema } from "../lib/debugging-api.ts";
 import { dependencyUsage } from "../lib/dependency-usage.ts";
 import { connectionSchema, loginSchema, assistantApi } from "../lib/assistant-api.ts";
@@ -444,4 +445,64 @@ test("whiteboard Python storage and frontend contracts agree", async () => {
   assert.equal(boardSchema.parse(data.board).title, "Contract board");
   assert.equal(reviewSchema.parse(data.review).revision, 1);
   assert.equal(boardSchema.safeParse({ ...data.board, schema_version: "future" }).success, false);
+});
+
+const layoutGroup = id => ({ id, label: id, nodeIds: [id], internal: 0 });
+const layoutLink = (source, target, count = 1) => ({ source, target, count, inferred: count, nodeIds: [] });
+const layoutGroups = ["app", "components", "ui", "lib", "island"].map(layoutGroup);
+const layoutLinks = [layoutLink("app", "components", 2), layoutLink("components", "ui", 35), layoutLink("components", "lib", 28), layoutLink("ui", "lib", 57)];
+
+test("layered layout puts importers above their dependencies, deterministically", () => {
+  const layout = layeredLayout(layoutGroups, layoutLinks);
+  const layerOf = id => layout.nodes.find(node => node.id === id).layer;
+  assert.deepEqual(["app", "components", "ui", "lib"].map(layerOf), [0, 1, 2, 3]);
+  assert.equal(layout.nodes.find(node => node.id === "island").isolated, true);
+  assert.notEqual(layout.isolatedTop, null);
+  assert.deepEqual(layout.cycles, []);
+  assert.ok(layout.edges.every(edge => !edge.back));
+  // components -> lib spans two layers, so it routes through one virtual waypoint between the boxes.
+  const long = layout.edges.find(edge => edge.link.source === "components" && edge.link.target === "lib");
+  assert.equal(long.points.length, 3);
+  assert.match(edgePath(long), /^M [\d.]+ [\d.]+ C .+ C .+$/);
+  assert.ok(layout.nodes.every(node => node.x >= 0 && node.x + node.width <= layout.width && node.y + node.height <= layout.height));
+  assert.deepEqual(layeredLayout(layoutGroups, layoutLinks), layout);
+  const reversed = layeredLayout([...layoutGroups].reverse(), [...layoutLinks].reverse());
+  assert.deepEqual(["app", "components", "ui", "lib"].map(id => reversed.nodes.find(node => node.id === id).layer), [0, 1, 2, 3]);
+});
+
+test("layered layout draws import cycles as back edges instead of hiding them", () => {
+  const layout = layeredLayout(layoutGroups, [...layoutLinks, layoutLink("lib", "components", 3)]);
+  assert.deepEqual(layout.cycles, [["components", "ui", "lib"]]);
+  assert.deepEqual(layout.edges.filter(edge => edge.back).map(edge => [edge.link.source, edge.link.target]), [["lib", "components"]]);
+  assert.ok(layout.edges.filter(edge => edge.link.source !== "app").every(edge => edge.cyclic));
+  assert.equal(layout.edges.find(edge => edge.link.source === "app").cyclic, false);
+  // Back edges bulge to the right, so the canvas reserves room for them.
+  assert.ok(layout.width > layeredLayout(layoutGroups, layoutLinks).width);
+});
+
+test("dependency matrix keeps forward dependencies above the diagonal and cycles below it", () => {
+  const clean = dependencyMatrix(layoutGroups, layoutLinks);
+  assert.deepEqual(clean.order, ["app", "components", "ui", "lib", "island"]);
+  assert.ok(clean.cells.every(cell => !cell.below && cell.row < cell.column));
+  assert.equal(clean.max, 57);
+  const cyclic = dependencyMatrix(layoutGroups, [...layoutLinks, layoutLink("lib", "components", 3)]);
+  assert.deepEqual(cyclic.cells.filter(cell => cell.below).map(cell => [cell.source, cell.target]), [["lib", "components"]]);
+  assert.deepEqual(cyclic.cycles, [["components", "ui", "lib"]]);
+});
+
+test("architecture map splits an expanded folder into its subfolders", () => {
+  const node = (id, kind, path, attributes = {}) => ({ id, kind, path, label: id, detail: "", confidence: 80, evidence: [], attributes });
+  const edge = (source, target, type) => ({ source, target, type, resolution: type === "IMPORTS" ? "unresolved" : "inferred", confidence: 80, evidence: [] });
+  const sample = {
+    nodes: [node("a", "file", "components/a.tsx"), node("b", "file", "components/ui/button.tsx"), node("u", "file", "lib/utils.ts"),
+      node("ia", "import", "components/a.tsx", { local_import: true }), node("ib", "import", "components/ui/button.tsx", { local_import: true })],
+    relationships: [edge("a", "ia", "IMPORTS"), edge("ia", "b", "RESOLVES_TO"), edge("b", "ib", "IMPORTS"), edge("ib", "u", "RESOLVES_TO")],
+  };
+  const collapsed = architectureMap(sample, "folders", 1);
+  assert.deepEqual(collapsed.groups.map(group => group.id).sort(), ["components", "lib"]);
+  assert.deepEqual(collapsed.links.map(link => [link.source, link.target, link.count]), [["components", "lib", 1]]);
+  assert.equal(collapsed.groups.find(group => group.id === "components").internal, 1);
+  const expanded = architectureMap(sample, "folders", 1, new Set(["components"]));
+  assert.deepEqual(expanded.groups.map(group => group.id).sort(), ["components", "components/ui", "lib"]);
+  assert.deepEqual(expanded.links.map(link => [link.source, link.target]).sort(), [["components", "components/ui"], ["components/ui", "lib"]]);
 });

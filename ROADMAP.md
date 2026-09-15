@@ -12,6 +12,7 @@ The debugging pivot replaces the old M0–M5 ordering. Detailed contracts and ac
 | D2 | Evidence follow-ups, verification attachments and source-access improvements | D1 | Planned |
 | D3 | Trace waterfall and one profile-format spike | D1 observation layer | Planned |
 | D4 | Single-user whiteboard: draw → AI clarifying questions → agent plan.md and human ticket | Local Codex bridge; optional repository snapshot | **Next track** (Andrew, 2026-09-14). Plan drafted in docs/WHITEBOARD-PLAN.md; W0 spike not started. Evidence cards from the original D4 scope moved to W6. |
+| V | Visual atlas: layered dependency graph, dependency matrix, stack and call-site sequence views, treemap and evidence charts | Existing atlas and observation data | Planned in docs/VISUALIZATION-PLAN.md; V0–V2 in progress (Claude implements, Astra reviews) |
 | D5 | Read-only MCP, IDE handoff, later trusted DAP experiment | Stable investigation services | Later |
 | D6 | Change verification, webhooks and team workflows | Evaluation data; hosting/auth where needed | Later |
 

@@ -26,7 +26,9 @@ from app.reporting import generate_report
 from app.settings import Settings
 
 EXCLUDED_DIRS = {".git", ".codandy", ".codeatlas", "node_modules", "bin", "obj", "dist", "build",
-                 ".venv", "vendor", ".next", ".ssh", ".aws", ".azure"}
+                 ".venv", "vendor", ".next", ".ssh", ".aws", ".azure",
+                 # Generated tool caches: never source, and common in zipped local projects.
+                 "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 SECRET_NAME = re.compile(
     r"(^\.env|^id_(rsa|ed25519|ecdsa)|credential|secret|^\.npmrc$|^\.pypirc$|"
     r"^\.netrc$|^appsettings.*\.json$|^web\.config$|^nuget\.config$|"

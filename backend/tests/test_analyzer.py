@@ -25,6 +25,18 @@ def resolved_imports(atlas):
             if edge.type == "RESOLVES_TO" and by_id[edge.source].kind == "import"}
 
 
+def test_python_and_tool_caches_are_not_indexed(tmp_path):
+    write_sources(tmp_path, {
+        "app/main.py": "def run():\n    return 1\n",
+        "app/__pycache__/main.cpython-312.pyc": "compiled",
+        ".pytest_cache/v/cache/lastfailed": "{}",
+        ".mypy_cache/3.12/app.meta.json": "{}",
+        ".ruff_cache/content": "cache",
+    })
+    atlas = analyze(tmp_path)
+    assert [node.path for node in atlas.nodes if node.kind == "file"] == ["app/main.py"]
+
+
 def test_tsconfig_path_aliases_resolve_as_data_only(tmp_path):
     write_sources(tmp_path, {
         "tsconfig.base.json": '{\n  // Shared aliases\n  "compilerOptions": {\n'

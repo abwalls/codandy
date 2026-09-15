@@ -3,19 +3,25 @@ import type { AnalysisAtlas } from "./analysis-api";
 export type ArchitectureGroup = { id: string; label: string; nodeIds: string[]; internal: number };
 export type ArchitectureLink = { source: string; target: string; count: number; inferred: number; nodeIds: string[] };
 
-export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "projects", depth = 1) {
+export function architectureMap(atlas: AnalysisAtlas, mode: "folders" | "projects", depth = 1, expanded: ReadonlySet<string> = new Set()) {
   const nodes = new Map(atlas.nodes.map(node => [node.id, node]));
   const groups = new Map<string, ArchitectureGroup>();
   const membership = new Map<string, string>();
+  // An expanded folder splits into its subfolders; files directly inside it stay in its group.
+  const folderGroup = (folders: string[]) => {
+    let size = Math.max(1, Math.min(depth, 3));
+    while (size < folders.length && expanded.has(folders.slice(0, size).join("/"))) size++;
+    return folders.slice(0, size).join("/") || ".";
+  };
   for (const node of atlas.nodes) {
     if (node.kind !== (mode === "projects" ? "project" : "file")) continue;
     const folders = node.path.replaceAll("\\", "/").split("/").slice(0, -1);
-    const id = mode === "projects" ? node.id : folders.slice(0, Math.max(1, Math.min(depth, 3))).join("/") || ".";
+    const id = mode === "projects" ? node.id : folderGroup(folders);
     if (!groups.has(id)) groups.set(id, { id, label: mode === "projects" ? node.path || node.label : id === "." ? "Repository root" : id, nodeIds: [], internal: 0 });
     groups.get(id)!.nodeIds.push(node.id); membership.set(node.id, id);
   }
   if (mode === "folders") for (const node of atlas.nodes) if (node.kind === "directory") {
-    const id = node.path.replaceAll("\\", "/").split("/").slice(0, Math.max(1, Math.min(depth, 3))).join("/") || ".";
+    const id = folderGroup(node.path.replaceAll("\\", "/").split("/"));
     if (groups.has(id)) membership.set(node.id, id);
   }
   const links = new Map<string, ArchitectureLink>();
