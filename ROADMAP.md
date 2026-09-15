@@ -14,6 +14,7 @@ The debugging pivot replaces the old M0–M5 ordering. Detailed contracts and ac
 | D4 | Single-user whiteboard: draw → AI clarifying questions → agent plan.md and human ticket | Local Codex bridge; optional repository snapshot | **Next track** (Andrew, 2026-09-14). Plan drafted in docs/WHITEBOARD-PLAN.md; W0 spike not started. Evidence cards from the original D4 scope moved to W6. |
 | D5 | Read-only MCP, IDE handoff, later trusted DAP experiment | Stable investigation services | Later |
 | D6 | Change verification, webhooks and team workflows | Evaluation data; hosting/auth where needed | Later |
+| I | Integrations: Sentry completion, OpenTelemetry and Datadog runtime evidence; Linear, ClickUp and Jira Cloud tickets; GitHub private repos, CI evidence, IDE links | Local-only foundations (I0); provider accounts for live gates | Planned in docs/INTEGRATIONS-PLAN.md (2026-09-15); Astra implements, Claude reviews; decisions pending in its §10 |
 
 ## Work that remains useful
 

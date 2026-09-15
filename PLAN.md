@@ -107,3 +107,14 @@ Normalization contracts and synthetic fixtures now support Sentry REST events pl
 ### Whiteboard delivery checkpoint — 2026-09-14
 
 The first usable whiteboard loop is implemented at `/whiteboard`: local drawing/CRUD/autosave, revision conflicts, reviewed text interpretation, user corrections, reviewed structured plans, saved plan versions, optional retained snapshot context, Markdown/ticket downloads, printable text and issue-draft copy. A live synthetic interpretation and plan both succeeded using the existing local Codex subscription connection. The longer W0–W5 gates are not wholly complete; see the implementation review in docs/WHITEBOARD-PLAN.md for the exact boundaries and remaining work.
+
+
+### Integrations plan — 2026-09-15
+
+[docs/INTEGRATIONS-PLAN.md](docs/INTEGRATIONS-PLAN.md) plans three groups of connectors:
+
+- **Monitoring:** finishing the Sentry connector, OpenTelemetry trace import and a local receiver, and Datadog errors and spans.
+- **Ticketing:** Linear, ClickUp and Jira Cloud.
+- **Supporting:** GitHub private repositories, CI test and coverage evidence, and IDE links.
+
+It extends D1b/D1d, D3 and D6 on these terms: monitoring is read-only; credentials stay on the backend; every ticket write is reviewed and explicitly confirmed, and the AI can only draft; no webhooks. Astra implements it slice by slice and Claude reviews each slice. Decisions still waiting on Andrew are listed in §10 of that plan.
