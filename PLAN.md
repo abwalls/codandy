@@ -72,6 +72,8 @@ Store boards locally with autosave, explicit delete and lossless JSON export/imp
 
 **Done when:** a board survives reload, can be exported/reimported, and generates a useful brief without an image-capable model. Bound attachments/scene size; sanitize links and imported markup; do not render untrusted SVG/HTML or auto-fetch remote images. Keyboard-accessible text/evidence editing and a usable small-screen fallback are release requirements. Realtime collaboration, public sharing and image interpretation are later.
 
+**2026-09-14 update:** Andrew made the Whiteboard the next implementation track and broadened its scope. A user draws a system, for example a cloud architecture. The AI interprets the drawing, asks clarifying questions, and produces an agent-ready `plan.md` plus a human-readable ticket, report page and GitHub issue draft. Boards can optionally link to a retained repository snapshot, and the local Codex subscription connection remains the AI provider. The detailed plan, with milestones W0–W6, is in [docs/WHITEBOARD-PLAN.md](docs/WHITEBOARD-PLAN.md). The D1 Sentry live gate stays open and proceeds when an account is available.
+
 ## D5 — Agent and IDE interoperability
 
 Expose a small read-only Codandy MCP surface backed by the same validated services: get investigation, get evidence, find symbol, get related code, export brief. Returned content retains provenance and uncertainty. Do not attach a broad Sentry MCP server to the current tool-disabled Codex bridge without a separate permission design. Direct provider API ingestion and agent-facing MCP serve different roles.

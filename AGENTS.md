@@ -17,6 +17,8 @@ Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the la
 
 ## Immediate milestone
 
+**2026-09-14:** Andrew made the Whiteboard (PLAN.md D4, broadened) the next implementation track. Start with W0 in [docs/WHITEBOARD-PLAN.md](docs/WHITEBOARD-PLAN.md) and follow its milestones and safety rules. D1 remains open: the live Sentry test and project/issue browsing continue once Andrew's account is available.
+
 D1 in PLAN.md: bounded event/stack contracts, redaction and TS/JS, Python and .NET fixtures; one read-only Sentry event flow; revision-aware frame/source binding; saved investigations; reviewed AI debugging brief export. Start with normalization and fixtures, then make the live connector functional. Do not start with numerical risk scores, broad telemetry ingestion, a debugger engine or empty sidebar pages.
 
 Runtime observations, source bindings, AI hypotheses and user plans are distinct. A stack trace does not establish function timing or the precise null operand. No telemetry path can open arbitrary source files. No board arrow becomes a static graph edge automatically. Existing .codandy/atlas.json schema 0.2 remains unchanged for this pivot.
