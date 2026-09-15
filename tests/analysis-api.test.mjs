@@ -639,3 +639,16 @@ test("hosted proxy forwards structure requests without the caller's query string
     else process.env.CODANDY_API_URL = oldOrigin;
   }
 });
+
+
+test("OTLP trace contract preserves nanosecond offsets and independent trace parents", async () => {
+  const { traceSchema, traceRows } = await import("../lib/trace-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from tests.test_traces import fixture; from app.debugging.traces import normalize_trace_bytes; print(normalize_trace_bytes(json.dumps(fixture()).encode()).model_dump_json())"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const trace = traceSchema.parse(JSON.parse(result.stdout));
+  const rows = traceRows(trace, "a".repeat(32));
+  assert.equal(rows[1].offsetMs, 0.000001);
+  assert.equal(rows[1].depth, 1);
+  assert.equal(rows[1].span.status, "error");
+  assert.deepEqual(traceRows(trace, "b".repeat(32)), []);
+});

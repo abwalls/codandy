@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { InvestigationBrief } from "@/components/investigation-brief";
 import { InvestigationSource } from "@/components/investigation-source";
 import { InvestigationCases } from "@/components/investigation-cases";
+import { TraceViewer } from "@/components/trace-viewer";
 import { ThemePicker } from "@/components/theme-picker";
 import { debuggingRequest, observationSchema, sentryStatusSchema, type Observation } from "@/lib/debugging-api";
 
@@ -78,6 +79,7 @@ export function DebuggingWorkspace() {
         </section>
       </aside>
       <section className="min-w-0 space-y-5" aria-label="Observation">
+        <TraceViewer />
         {busy && <div role="status" className="flex items-center gap-3">Reading evidence…<Button variant="outline" onClick={() => controller.current?.abort()}>Cancel</Button></div>}
         {error && <p role="alert" className="break-words rounded-xl border border-destructive p-4">{error}</p>}
         {!observation && !busy && <div className="rounded-xl border bg-card p-8"><h2 className="text-xl font-semibold">Start with the failure</h2><p className="mt-3 text-muted-foreground">Import an event to see its exception chain, ordered frames, breadcrumbs and missing evidence.</p><p className="mt-3 text-sm text-muted-foreground">Save a case to preserve evidence and notes. Match saved cases to a repository snapshot to inspect candidate source files. A stack alone does not establish function timing or the exact cause of a null reference.</p></div>}

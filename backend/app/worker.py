@@ -25,6 +25,7 @@ def _analyze(connection, root, url, ref, limits):
         settings = Settings.model_validate(limits)
         atlas = analyze_repository(Path(root), url, ref, settings,
                                    lambda phase, value: connection.send(("progress", phase, value)))
+        connection.send(("atlas", atlas.model_dump_json()))
         connection.send(("progress", "reporting", 89))
         structure = build_structure(Path(root), atlas, settings,
                                     started + settings.analysis_timeout_seconds * STRUCTURE_BUDGET)
@@ -44,19 +45,26 @@ def analyze_isolated(root, url, ref, limits, progress, *,
     process = context.Process(target=worker, args=(sender, str(root), url, ref,
                                                   limits.model_dump()), daemon=True)
     deadline = time.monotonic() + limits.analysis_timeout_seconds
+    completed_atlas = None
     try:
         process.start()
         sender.close()
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
+                if completed_atlas is not None:
+                    return completed_atlas, StructureDocument(limitations=[EXTRACTION_FAILED])
                 raise IngestionError("Static analysis timed out")
             if receiver.poll(min(0.05, remaining)):
                 try:
                     message = receiver.recv()
                 except EOFError as exc:
+                    if completed_atlas is not None:
+                        return completed_atlas, StructureDocument(limitations=[EXTRACTION_FAILED])
                     raise IngestionError("Static analysis worker exited unexpectedly") from exc
-                if message[0] == "progress":
+                if message[0] == "atlas":
+                    completed_atlas = AtlasDocument.model_validate_json(message[1])
+                elif message[0] == "progress":
                     progress(message[1], message[2])
                 elif message[0] == "error":
                     raise IngestionError(message[1])
@@ -68,6 +76,8 @@ def analyze_isolated(root, url, ref, limits, progress, *,
                         structure = StructureDocument(limitations=[EXTRACTION_FAILED])
                     return atlas, structure
             elif not process.is_alive():
+                if completed_atlas is not None:
+                    return completed_atlas, StructureDocument(limitations=[EXTRACTION_FAILED])
                 raise IngestionError("Static analysis worker exited unexpectedly")
     finally:
         sender.close()

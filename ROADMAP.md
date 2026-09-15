@@ -10,9 +10,9 @@ The debugging pivot replaces the old M0–M5 ordering. Detailed contracts and ac
 | D1c | Frame/source binding and persistent investigation UI | D1a; snapshot identity | Local persistence and candidate matching implemented; independent revision verification pending |
 | D1d | Live issue → source → reviewed AI brief | D1b + D1c | Brief export/local Q&A implemented; live end-to-end gate remains open |
 | D2 | Evidence follow-ups, verification attachments and source-access improvements | D1 | Planned |
-| D3 | Trace waterfall and one profile-format spike | D1 observation layer | Planned |
-| D4 | Single-user whiteboard: draw → AI clarifying questions → agent plan.md and human ticket | Local Codex bridge; optional repository snapshot | **Next track** (Andrew, 2026-09-14). Plan drafted in docs/WHITEBOARD-PLAN.md; W0 spike not started. Evidence cards from the original D4 scope moved to W6. |
-| V | Visual atlas: layered dependency graph, dependency matrix, stack and call-site sequence views, treemap and evidence charts | Existing atlas and observation data | Planned in docs/VISUALIZATION-PLAN.md; V0–V2 in progress (Claude implements, Astra reviews) |
+| D3 | Trace waterfall and one profile-format spike | D1 observation layer | Offline OTLP JSON import and waterfall implemented; profile spike and live collection pending |
+| D4 | Single-user whiteboard: draw → AI clarifying questions → agent plan.md and human ticket | Local Codex bridge; optional repository snapshot | **Next track** (Andrew, 2026-09-14). Local drawing, autosave, reviewed text AI interpretation, plan and ticket Markdown export implemented and browser tested; image interpretation and provider ticket creation remain open. See docs/WHITEBOARD-PLAN.md. Evidence cards from the original D4 scope moved to W6. |
+| V | Visual atlas: layered dependency graph, dependency matrix, stack and call-site sequence views, treemap and evidence charts | Existing atlas and observation data | Planned in docs/VISUALIZATION-PLAN.md; V0–V2 implemented and browser reviewed (Claude implements, Astra reviews) |
 | D5 | Read-only MCP, IDE handoff, later trusted DAP experiment | Stable investigation services | Later |
 | D6 | Change verification, webhooks and team workflows | Evaluation data; hosting/auth where needed | Later |
 | I | Integrations: Sentry completion, OpenTelemetry and Datadog runtime evidence; Linear, ClickUp and Jira Cloud tickets; GitHub private repos, CI evidence, IDE links | Local-only foundations (I0); provider accounts for live gates | Planned in docs/INTEGRATIONS-PLAN.md (2026-09-15); Astra implements, Claude reviews; decisions pending in its §10 |
@@ -40,3 +40,7 @@ Sentry cloud versus self-hosted target, organization region, an authorized test 
 Automatic production log collection, own telemetry infrastructure, full IDE editing, native replay recording, autonomous fixes or Sentry writes, test execution inside static ingestion, arbitrary webhook receiver exposure, numerical change-risk scores without calibration, cross-repository federation and realtime collaborative boards.
 
 The previous delivery plan/status report remain in docs/archive/. Their dates, counts, defects and deferrals are historical; they must not override this roadmap or current progress.md checkpoints.
+
+## 2026-09-15 review checkpoint
+
+AD0–AD2 declared ERD/data-contract views passed desktop/mobile and theme QA after annotation-redaction, generic-shadowing and optional-worker-failure fixes. See ASTRA-DIAGRAMS-CR-2026-09-15.md. Offline M2 trace import is implemented; this does not complete the provider foundation or live integrations. Next: provider foundation and reviewed ticket drafts, then Linear creation with explicit target/payload confirmation; observed stack/trace sequence views can reuse existing evidence.

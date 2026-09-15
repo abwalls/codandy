@@ -3,6 +3,8 @@
 import hashlib
 from dataclasses import dataclass, field
 
+from app.debugging.redaction import Redactor
+
 MAX_NAME = 128
 MAX_TYPE_TEXT = 120
 
@@ -12,7 +14,7 @@ def structure_id(kind: str, *parts: str) -> str:
 
 
 def clip(text: str, limit: int = MAX_TYPE_TEXT) -> str:
-    compact = " ".join(text.split())
+    compact = " ".join(Redactor().text(text, "structure_type").split())
     return compact if len(compact) <= limit else compact[:limit - 1] + "…"
 
 

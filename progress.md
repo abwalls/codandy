@@ -466,3 +466,18 @@ separate because the consolidation was explicitly declined.
   - Personal report, case and board hashes are unchanged.
   - On a source copy of Codandy: 88 contract types and 92 links in 0.33 s; no database schemas, as expected.
 - **Not verified:** browser rendering and interaction of the new views (the running :8000 backend was not restarted, so it lacks the endpoint), other themes, and large real schemas. Handoff: CLAUDE-HANDOFF-2026-09-15.md.
+
+
+### 2026-09-15 — Resume, diagram review and offline trace import
+
+- Resumed on claude/architecture-diagrams at 50ab730. Claude committed the prior whiteboard implementation and added visual/ERD/contract code; ticket providers and monitoring integrations were plans only. Reviewed both handoffs and integration/diagram plans.
+- Fixed verified annotation-token leakage and generic-parameter false links (both new regressions failed before fixes). Added an atlas checkpoint so optional diagram timeout/crash preserves completed analysis. 17 focused structure/worker tests passed; review details in ASTRA-DIAGRAMS-CR-2026-09-15.md.
+- Added the first offline M2 slice: local OTLP JSON import (2 MiB, 1,000 spans), exact nanosecond strings, duplicate-ID validation, parent/missing/cycle labels, attribute allowlist/redaction, and a filterable waterfall/selected-span view in Errors & stacks. Reviewed sanitized export and explicit ephemeral retention. Ten focused backend tests and TypeScript/ESLint checks passed. No provider credentials, network receiver or external writes were introduced.
+- Plan refinements distinguish offline import from provider foundation dependencies, proposed architecture patterns from detected evidence, and ticket drafts from actual writes. Full regression, browser review, whiteboard recheck and publication remain in progress.
+
+### 2026-09-15 — Regression and browser verification complete
+
+- Passed 280 backend tests and 41 frontend/API contracts, Ruff, TypeScript, changed-file ESLint, diff checks and production build. Backend saved report/case/board hashes did not change. Existing dependency deprecation and large-bundle warnings remain non-blocking.
+- Edge QA passed ERD rendering in all five themes, keyboard selection, desktop/mobile data contracts, OTLP import/filter/selection/redaction/reviewed export, and whiteboard drawing/label/notes autosave/reopen/export. Whiteboard loaded without external asset requests. Synthetic QA reports and boards were removed by ID/title-scoped cleanup.
+- Updated the roadmap and agent guide to replace stale W0-not-started status. Review handoffs: ASTRA-DIAGRAMS-CR-2026-09-15.md and ASTRA-INTEGRATIONS-M2-2026-09-15.md.
+- Next boundary: provider foundation and reviewed Linear ticket creation, plus observed sequence views. Jira, ClickUp, Datadog, live OTLP collection, image-based whiteboard interpretation and autonomous implementation are not complete. Publication follows this validated checkpoint.

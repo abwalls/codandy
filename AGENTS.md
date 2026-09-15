@@ -8,17 +8,19 @@ Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the la
 
 ## Current state
 
-- Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. Current validation includes 221 backend tests and 28 frontend/API contracts, plus desktop/mobile Edge workflow QA. Tests must use the autouse isolated storage/provider fixture in backend/tests/conftest.py; never run them against personal reports or provider credentials.
+- Implemented: bounded five-language static analysis, atlas/source/report views, dependency checks, retained reports, snapshot comparison, themes and a local Codex subscription connection. Current validation includes 280 backend tests and 41 frontend/API contracts, plus desktop/mobile Edge workflow QA. Tests must use the autouse isolated storage/provider fixture in backend/tests/conftest.py; never run them against personal reports or provider credentials.
 - Implemented D1 slice: local Sentry REST event/stack imports, sanitized observation viewer/export, and a backend-held read-only Sentry Cloud event connector. Live credentials have not been configured or verified.
 - Implemented: ZIP project upload, interactive static Architecture map, local saved cases/notes/status, candidate frame-to-snapshot matching, reviewed brief export and local investigation Q&A. Unknown or user-supplied revisions never upgrade to independently verified exact bindings.
-- On branch `claude/architecture-diagrams` (pending Astra's review): declared data models and data contracts in a separate `structure-0.1` document (`backend/app/structure/`), built in the analysis worker beside the atlas, persisted with snapshots and served at `/api/analyses/{id}/structure`. The Architecture tab shows Dependencies, Data model (ERD) and Data contracts views. Keep `backend/app/structure/models.py` and `lib/structure-api.ts` synchronized; extractors read indexed files as text only.
-- Planned, not implemented: project/issue browsing, independent runtime revision verification, trace/profile viewers, whiteboards, Codandy MCP and trusted live debugger control.
+- Implemented and reviewed (2026-09-15): declared data models and data contracts in a separate `structure-0.1` document (`backend/app/structure/`), built in the analysis worker beside the atlas, persisted with snapshots and served at `/api/analyses/{id}/structure`. The Architecture tab shows Dependencies, Data model (ERD) and Data contracts views. Keep `backend/app/structure/models.py` and `lib/structure-api.ts` synchronized; extractors read indexed files as text only.
+- Planned, not implemented: project/issue browsing, independent runtime revision verification, profile viewers, Codandy MCP and trusted live debugger control.
 - Actual static relationship types: CONTAINS, IMPORTS, RESOLVES_TO, DEPENDS_ON, ROUTES_TO and CALLS. IDs are deterministic from kind/path/name; snapshot identity is required for runtime associations. No comprehensive call graph, coverage or per-function performance claim is supported.
 - The hosted UI/sample remains separate from local Python analysis and subscription AI. Keep samples and unavailable features clearly labeled.
 
+- Implemented offline monitoring slice: bounded OTLP JSON trace import with scrubbed attributes, exact nanosecond timestamps, parent validation and an interactive waterfall. No live receiver, Datadog connector or ticket-provider writes yet.
+
 ## Immediate milestone
 
-**2026-09-14:** Andrew made the Whiteboard (PLAN.md D4, broadened) the next implementation track. Start with W0 in [docs/WHITEBOARD-PLAN.md](docs/WHITEBOARD-PLAN.md) and follow its milestones and safety rules. D1 remains open: the live Sentry test and project/issue browsing continue once Andrew's account is available.
+**2026-09-14:** Andrew made the Whiteboard (PLAN.md D4, broadened) the next implementation track. The local drawing, autosave, reviewed text interpretation and plan/export flow now works. Follow the remaining milestones and safety rules in [docs/WHITEBOARD-PLAN.md](docs/WHITEBOARD-PLAN.md). D1 remains open: the live Sentry test and project/issue browsing continue once Andrew's account is available.
 
 D1 in PLAN.md: bounded event/stack contracts, redaction and TS/JS, Python and .NET fixtures; one read-only Sentry event flow; revision-aware frame/source binding; saved investigations; reviewed AI debugging brief export. Start with normalization and fixtures, then make the live connector functional. Do not start with numerical risk scores, broad telemetry ingestion, a debugger engine or empty sidebar pages.
 

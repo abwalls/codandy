@@ -570,3 +570,17 @@ def test_structure_endpoint_persists_with_the_report(tmp_path, monkeypatch):
         assert missing.status_code == 404
         assert "Run the analysis again" in missing.json()["detail"]
         assert client.get(f"/api/analyses/{created}/atlas").status_code == 200
+
+
+def test_contract_type_text_scrubs_tokens_before_clipping():
+    from app.structure.common import clip
+    token = "ghp_" + "A" * 40
+    assert token not in clip('Literal["' + token + '"]')
+    assert "[redacted" in clip('Literal["' + token + '"]')
+
+
+def test_generic_type_parameters_do_not_link_to_unrelated_types(tmp_path):
+    write(tmp_path, {"types.ts": "interface Target { id: string }; interface Box<Target> { value: Target }"})
+    _atlas, structure = analyze(tmp_path)
+    box = next(t for t in structure.types if t.name == "Box")
+    assert not [link for link in structure.type_links if link.source == box.id]

@@ -10,6 +10,7 @@ from app.debugging.payload import NormalizationError
 from app.debugging.sentry_client import SentryError, fetch_event
 from app.debugging.sentry_event import normalize_sentry_event_bytes
 from app.debugging.stacks import normalize_stack_text
+from app.debugging.traces import TraceImport, normalize_trace_bytes
 from app.settings import settings
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
@@ -73,5 +74,24 @@ def retrieve(issue: str, event: str, request: Request):
         return request.app.state.investigations.remember(fetch_event(settings, issue, event))
     except SentryError as exc:
         raise HTTPException(502, str(exc)) from None
+    finally:
+        busy.release()
+
+
+@router.post("/traces/import", response_model=TraceImport)
+async def import_trace(request: Request):
+    if request.headers.get("content-type", "").split(";", 1)[0].strip() != "application/json":
+        raise HTTPException(415, "Use an OTLP JSON file")
+    if not busy.acquire(blocking=False):
+        raise HTTPException(409, "Another debugging request is running")
+    try:
+        data = bytearray()
+        async for chunk in request.stream():
+            if len(data) + len(chunk) > DebuggingLimits().max_payload_bytes:
+                raise HTTPException(413, "Trace import exceeds 2 MiB")
+            data.extend(chunk)
+        return await run_in_threadpool(normalize_trace_bytes, bytes(data))
+    except NormalizationError as exc:
+        raise HTTPException(422, str(exc)) from None
     finally:
         busy.release()

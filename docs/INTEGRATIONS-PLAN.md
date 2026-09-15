@@ -342,3 +342,12 @@ Ticketing gives the quickest visible win. Sentry completes the D1 gate. OpenTele
 - Linear: [GraphQL API](https://linear.app/developers/graphql)
 - ClickUp: [Create Task](https://developer.clickup.com/reference/createtask)
 - Jira Cloud: [REST v3 Issues](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/), [REST v3 intro (ADF)](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/), [Basic auth](https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/), [Create issue metadata deprecation](https://community.developer.atlassian.com/t/create-issue-meta-endpoint-deprecation/75413), [API token management](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/), [One-year token expiry](https://community.atlassian.com/forums/Jira-articles/API-tokens-will-now-have-a-maximum-one-year-expiry/ba-p/2880029)
+
+
+## Implementation refinement — 2026-09-15
+
+The offline part of M2 can precede I0 because it makes no outbound provider call and needs no credentials or outbound audit. The first M2 slice implements a local-only, bounded OTLP JSON import and trace waterfall with exact nanosecond timestamps, parent/missing/cycle labels, error filtering, field allowlisting, redaction and reviewed export. It retains sanitized data in the browser tab only. Span events, exception conversion, source candidates, durable trace storage and the live receiver remain separate follow-ups. This does not mark M2 as wholly complete.
+
+Keep Linear as the provisional first tracker and .env as the credential seam until a different user preference is supplied. A reviewed ticket draft is not authorization for hidden future writes: each actual create action must identify the provider, target and current payload. Datadog, Jira and ClickUp require their own tested adapters; they are not available merely because they appear in this plan.
+
+Primary OTLP reference: https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding

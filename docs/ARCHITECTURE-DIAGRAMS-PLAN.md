@@ -420,3 +420,8 @@ All checked 2026-09-14/15; reconfirm at adoption.
 | AD2 (part) | Pydantic, dataclasses, TypedDict, TypeScript interfaces and object type aliases; `extends` and member-type links resolved by same file, then resolved local import, then unique name (inferred); folder view with stubs for types elsewhere; Mermaid `classDiagram` | C#, Go and JavaScript classes, zod, `implements`, methods |
 | AD6 (part) | SQLAlchemy (`__tablename__`, `Column`/`mapped_column`, `Mapped[]` nullability, mixins, `ForeignKey`, `relationship(secondary=)`) and Django (fields, FK/OneToOne/M2M, abstract parents, implicit `id`, `db_table`, `AUTH_USER_MODEL` kept unresolved), each drawn as its own schema source | Merging the same table across sources; Drizzle, TypeORM, EF Core |
 | WHITEBOARD-PLAN W6 (AI edits via element skeletons) | Shares the diagram-to-board conversion |
+
+
+## Review refinement — 2026-09-15
+
+Prioritize useful visual evidence: ship the reviewed ERD and type/contract diagrams, then add observed stack sequences and traced span sequences, static call-site sequences, and declared deployment diagrams. Pattern illustrations belong in a labeled reference/proposal view until concrete evidence supports a pattern match. A whiteboard proposal must not mutate the extracted architecture graph; ticket creation and any implementation remain separate explicit actions. See ASTRA-DIAGRAMS-CR-2026-09-15.md for verified extraction fixes.

@@ -40,6 +40,9 @@ def typescript_types(path: str, data: bytes, parser: Parser) -> list[RawType]:
         declared = RawType(name=text_of(name, data)[:MAX_NAME], language="TypeScript", kind=kind,
                            path=path,
                            lines=line_range(node.start_point.row + 1, node.end_point.row + 1))
+        parameters = node.child_by_field_name("type_parameters")
+        local_parameters = {text_of(name, data) for parameter in parameters.named_children
+                            if (name := parameter.child_by_field_name("name")) is not None} if parameters else set()
         for clause in node.named_children:
             if clause.type != "extends_type_clause":
                 continue
@@ -63,5 +66,6 @@ def typescript_types(path: str, data: bytes, parser: Parser) -> list[RawType]:
             if annotation is not None:
                 for reference in dict.fromkeys(type_names(annotation, data)):
                     declared.references.append((label, reference, "field_type", line))
+        declared.references = [reference for reference in declared.references if reference[1] not in local_parameters]
         found.append(declared)
     return found
