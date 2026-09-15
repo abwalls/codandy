@@ -652,3 +652,78 @@ test("OTLP trace contract preserves nanosecond offsets and independent trace par
   assert.equal(rows[1].span.status, "error");
   assert.deepEqual(traceRows(trace, "b".repeat(32)), []);
 });
+
+const stackFrame = (index, fn, path, line, inApp = true, asyncBoundary = false) => ({ index, provider_index: index, function: fn, module: null, path, abs_path: null, line, column: null, in_app: inApp, after_async_boundary: asyncBoundary, context: [] });
+const stackException = { index: 0, type: "TypeError", value: "Cannot read properties of undefined", module: null, relation_to_next: null, provider_exception_id: null, provider_parent_id: null, handled: false, frames_omitted: 3, frames: [
+  stackFrame(0, "handle", "node_modules/express/router.js", 10, false),
+  stackFrame(1, "dispatch", "node_modules/express/layer.js", 20, false),
+  stackFrame(2, "checkout", "src/routes/orders.ts", 30),
+  stackFrame(3, "loadCart", "src/routes/orders.ts", 44),
+  stackFrame(4, "fetchPrices", "src/services/pricing.ts", 12, true, true),
+] };
+
+test("stack sequence follows observed caller-to-callee order and ends at the raise", async () => {
+  const { mermaidSequence, stackSequence } = await import("../lib/sequence-diagram.ts");
+  const all = stackSequence(stackException);
+  assert.deepEqual(all.participants.map(item => item.label), ["Entry point", "router.js", "layer.js", "orders.ts", "pricing.ts"]);
+  assert.deepEqual(all.messages.map(item => [item.kind, item.label]), [["call", "handle()"], ["call", "dispatch()"], ["call", "checkout()"], ["call", "loadCart()"], ["async", "fetchPrices()"], ["raise", "raises TypeError"]]);
+  assert.equal(all.messages[3].from, all.messages[3].to);
+  assert.ok(all.messages.filter(item => item.kind !== "raise").every(item => item.activeUntil === all.messages.length - 1));
+  assert.ok(all.notes.some(note => note.includes("3 frames were omitted")));
+  const app = stackSequence(stackException, { appOnly: true });
+  assert.deepEqual([app.messages[0].kind, app.messages[0].label], ["gap", "2 hidden frames, then checkout()"]);
+  assert.equal(app.participants.some(item => item.label === "router.js"), false);
+  assert.equal(stackSequence(stackException, { groupBy: "function" }).participants.length, 6);
+  const trimmed = stackSequence(stackException, { limit: 3 });
+  assert.deepEqual([trimmed.messages.length, trimmed.omitted, trimmed.messages.map(item => item.activeUntil)], [3, 3, [2, 2, null]]);
+  const text = mermaidSequence(all);
+  assert.match(text, /^sequenceDiagram\n {4}participant P1 as Entry point\n/);
+  assert.match(text, /\n {4}P4->>P4: loadCart\(\)\n/);
+  assert.match(text, /\n {4}P4-\)P5: fetchPrices\(\)\n/);
+  assert.match(text, /\n {4}Note over P5: raises TypeError\n/);
+  const hostile = mermaidSequence(stackSequence({ ...stackException, frames: [stackFrame(0, 'run"; click', "src/a;#<b>{c}.ts", 1)] }));
+  // Arrows such as ->> legitimately contain ">", so check the characters labels must lose.
+  assert.equal(/[;#<{}"]/.test(hostile), false);
+  assert.equal(hostile.includes("b>"), false);
+});
+
+test("stack sequence accepts normalized Python Sentry evidence", async () => {
+  const { stackSequence } = await import("../lib/sequence-diagram.ts");
+  const result = spawnSync(python, ["-c", `
+from pathlib import Path
+from app.debugging.sentry_event import normalize_sentry_event_bytes
+print(normalize_sentry_event_bytes(Path('tests/fixtures/debugging/sentry_python_chained.json').read_bytes()).model_dump_json())
+`], { cwd: resolve("backend"), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  assert.equal(result.status, 0, result.stderr);
+  const observation = observationSchema.parse(JSON.parse(result.stdout));
+  assert.ok(observation.exceptions.length > 1);
+  for (const exception of observation.exceptions) {
+    const view = stackSequence(exception);
+    const ids = new Set(view.participants.map(item => item.id));
+    assert.ok(view.messages.every(item => ids.has(item.from) && ids.has(item.to)));
+    assert.equal(view.messages.filter(item => item.kind === "raise").length, exception.frames.length ? 1 : 0);
+  }
+});
+
+test("trace sequence draws parent services to child services in start order", async () => {
+  const { mermaidSequence, traceSequence } = await import("../lib/sequence-diagram.ts");
+  const span = (id, parent, service, name, start, end, extra = {}) => ({ trace_id: "c".repeat(32), span_id: id.repeat(16), parent_id: parent ? parent.repeat(16) : null, name, service, start_ns: String(start), end_ns: String(end), status: "unset", parent_state: parent ? "present" : "root", attributes: {}, ...extra });
+  const trace = { schema_version: "trace-0.1", omitted_spans: 0, withheld_attributes: 0, redactions: [], limitations: [], spans: [
+    span("1", null, "web", "GET /checkout", 1_000_000, 90_000_000),
+    span("2", "1", "api", "POST /orders", 2_000_000, 80_000_000),
+    span("3", "2", "api", "validate cart", 3_000_000, 4_000_000),
+    span("4", "2", "db", "INSERT orders", 5_000_000, 70_000_000, { status: "error" }),
+    span("5", "9", "worker", "send email", 6_000_000, 7_000_000, { parent_state: "missing" }),
+  ] };
+  const id = "c".repeat(32);
+  const view = traceSequence(trace, id);
+  assert.deepEqual(view.participants.map(item => item.label), ["Outside this trace", "web", "api", "db", "worker"]);
+  assert.deepEqual(view.messages.map(item => [item.from, item.to, item.label]), [["outside", "service:web", "GET /checkout"], ["service:web", "service:api", "POST /orders"], ["service:api", "service:api", "validate cart"], ["service:api", "service:db", "INSERT orders"], ["outside", "service:worker", "send email"]]);
+  assert.deepEqual(view.messages.map(item => item.activeUntil), [3, 3, 2, 3, 4]);
+  assert.deepEqual([view.messages[3].error, view.messages[1].durationMs, view.messages[4].offsetMs], [true, 78, 5]);
+  assert.match(view.messages[4].detail, /parent span is not in this import/);
+  assert.match(mermaidSequence(view), /\n {4}P3-xP4: INSERT orders \(65\.0 ms\)\n/);
+  const limited = traceSequence(trace, id, { limit: 2 });
+  assert.deepEqual([limited.omitted, limited.messages.map(item => item.activeUntil), limited.participants.map(item => item.label)], [3, [1, 1], ["Outside this trace", "web", "api"]]);
+  assert.deepEqual(traceSequence(trace, "d".repeat(32)).messages, []);
+});

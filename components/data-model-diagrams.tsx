@@ -7,6 +7,7 @@ import { Braces, Check, Copy, Database, Focus, GitFork, KeyRound, Minus, Plus } 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AskButton } from "@/components/ask-codandy";
+import { useClipboard } from "@/hooks/use-clipboard";
 import { RECORD_HEADER, RECORD_ROW, recordEdgePath, recordEndDirections, recordLayout } from "@/lib/architecture-layout";
 import {
   contractAreas, contractsView, describeEntityLink, describeTypeLink, entityKeys, entitySubtitle, erdView,
@@ -147,15 +148,6 @@ function LegendMark({ mark, children }: { mark: LinkEndMark; children: ReactNode
   </span>;
 }
 
-function useCopy() {
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
-  const copy = (text: string) => {
-    if (!navigator.clipboard) { setState("failed"); return; }
-    navigator.clipboard.writeText(text).then(() => setState("copied"), () => setState("failed"));
-  };
-  return [state, copy] as const;
-}
-
 function useFileNodes(atlas: AnalysisAtlas) {
   return useMemo(() => new Map(atlas.nodes.filter(node => node.kind === "file").map(node => [node.path, node.id])), [atlas]);
 }
@@ -218,7 +210,7 @@ export function DataModelView({ structure, atlas, onInspect }: ViewProps) {
   const [focus, setFocus] = useState<string | null>(null);
   const [keysOnly, setKeysOnly] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [copied, copy] = useCopy();
+  const [copied, copy] = useClipboard();
   const files = useFileNodes(atlas);
   const entities = useMemo(() => structure.entities.filter(entity => entity.source_id === sourceId), [structure, sourceId]);
   const links = useMemo(() => structure.entity_links.filter(link => link.source_id === sourceId), [structure, sourceId]);
@@ -331,7 +323,7 @@ export function DataContractsView({ structure, atlas, onInspect }: ViewProps) {
   const [focus, setFocus] = useState<string | null>(null);
   const [inheritance, setInheritance] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const [copied, copy] = useCopy();
+  const [copied, copy] = useClipboard();
   const files = useFileNodes(atlas);
   const types = useMemo(() => new Map(structure.types.map(type => [type.id, type])), [structure]);
   const view = useMemo(() => contractsView(structure, { area, query, focus, inheritance, limit: DIAGRAM_LIMIT }), [structure, area, query, focus, inheritance]);

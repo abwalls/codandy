@@ -17,6 +17,7 @@ Read PLAN.md, ROADMAP.md, ARCHITECTURE.md, docs/DEBUGGING-STRATEGY.md and the la
 - The hosted UI/sample remains separate from local Python analysis and subscription AI. Keep samples and unavailable features clearly labeled.
 
 - Implemented offline monitoring slice: bounded OTLP JSON trace import with scrubbed attributes, exact nanosecond timestamps, parent validation and an interactive waterfall. No live receiver, Datadog connector or ticket-provider writes yet.
+- On branch `claude/observed-sequences` (pending Astra's review): observed sequence diagrams for exception stacks (Errors & stacks, Frames/Sequence toggle) and imported OTLP traces (Waterfall/Sequence toggle), built in `lib/sequence-diagram.ts` from the existing observation and trace contracts, with Mermaid export. Keep static call order, observed stacks and timed spans as separate sequence sources. The analysis worker now sends the atlas once, then diagrams in a separate `structure` message.
 
 ## Immediate milestone
 

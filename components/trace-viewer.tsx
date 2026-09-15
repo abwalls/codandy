@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TraceSequence } from "@/components/sequence-diagram";
 import { debuggingRequest } from "@/lib/debugging-api";
 import { downloadText } from "@/lib/board-api";
 import { traceRows, traceSchema, type Trace } from "@/lib/trace-api";
@@ -11,6 +12,7 @@ export function TraceViewer() {
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [query, setQuery] = useState(""), [errorsOnly, setErrorsOnly] = useState(false), [reviewed, setReviewed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<"waterfall" | "sequence">("waterfall");
   const rows = useMemo(() => trace ? traceRows(trace, id) : [], [trace, id]);
   const visible = rows.filter(r => (!errorsOnly || r.span.status === "error") && `${r.span.name} ${r.span.service}`.toLowerCase().includes(query.toLowerCase()));
   const detail = rows.find(r => r.span.span_id === selected);
@@ -26,7 +28,9 @@ export function TraceViewer() {
     }} /></label>
     <p className="text-xs text-muted-foreground">Up to 1,000 spans. Sanitized results remain in this tab until you clear or reload it; raw telemetry is not saved.</p>
     {busy && <p role="status">Reading trace…</p>}{error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    {trace && <><div className="flex flex-wrap gap-3"><label className="min-w-0 text-sm">Trace<select aria-label="Trace ID" className="mt-1 block max-w-full rounded border bg-card p-2 font-mono text-xs" value={id} onChange={e => { setId(e.target.value); setSelected(null); }}>{[...new Set(trace.spans.map(s => s.trace_id))].map(value => <option key={value}>{value}</option>)}</select></label><label className="flex-1 text-sm">Find span or service<Input value={query} onChange={e => setQuery(e.target.value)} /></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={errorsOnly} onChange={e => setErrorsOnly(e.target.checked)} />Errors only</label></div>
+    {trace && <><div role="group" aria-label="Trace view" className="flex flex-wrap gap-2"><Button size="sm" variant={view === "waterfall" ? "secondary" : "outline"} aria-pressed={view === "waterfall"} onClick={() => setView("waterfall")}>Waterfall</Button><Button size="sm" variant={view === "sequence" ? "secondary" : "outline"} aria-pressed={view === "sequence"} onClick={() => setView("sequence")}>Sequence diagram</Button></div>
+      <div className="flex flex-wrap gap-3"><label className="min-w-0 text-sm">Trace<select aria-label="Trace ID" className="mt-1 block max-w-full rounded border bg-card p-2 font-mono text-xs" value={id} onChange={e => { setId(e.target.value); setSelected(null); }}>{[...new Set(trace.spans.map(s => s.trace_id))].map(value => <option key={value}>{value}</option>)}</select></label>{view === "waterfall" && <><label className="flex-1 text-sm">Find span or service<Input value={query} onChange={e => setQuery(e.target.value)} /></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={errorsOnly} onChange={e => setErrorsOnly(e.target.checked)} />Errors only</label></>}</div>
+      {view === "sequence" ? <TraceSequence key={id} trace={trace} traceId={id} /> : <>
       <p className="text-xs text-muted-foreground">{visible.length} of {rows.length} spans shown · elapsed wall time, not CPU time. Parent nesting comes from imported IDs. Overlapping bars may run concurrently.</p>
       <div className="max-h-[520px] space-y-2 overflow-auto" aria-label="Trace waterfall">{visible.map(row => <button key={row.span.span_id} aria-pressed={selected === row.span.span_id} onClick={() => setSelected(row.span.span_id)} className={`block w-full rounded-lg border p-3 text-left ${selected === row.span.span_id ? "border-primary" : "hover:bg-muted"}`}>
         <div className="flex flex-wrap justify-between gap-2 text-xs"><span className="min-w-0 break-words" style={{ paddingLeft: Math.min(row.depth, 5) * 8 }}><span className="font-semibold">{row.span.service}</span> · {row.span.name}</span><span>{row.durationMs.toFixed(3)} ms · {row.span.status}</span></div>
@@ -34,6 +38,7 @@ export function TraceViewer() {
         <p className="text-xs text-muted-foreground">+{row.offsetMs.toFixed(3)} ms from trace start{row.span.parent_state === "missing" ? " · parent absent from import" : row.span.parent_state === "cycle" ? " · cyclic parent chain; nesting unavailable" : ` · nesting depth ${row.depth}`}</p>
       </button>)}{!visible.length && <p className="p-3 text-sm">No spans match these filters.</p>}</div>
       {detail && <div className="rounded-lg border p-3"><h3 className="font-semibold">Selected span</h3><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(detail.span, null, 2)}</pre></div>}
+      </>}
       <details><summary className="cursor-pointer text-sm">Import limits and scrubbing</summary><ul className="mt-2 list-disc space-y-1 pl-5 text-xs">{trace.limitations.map(item => <li key={item}>{item}</li>)}<li>{trace.omitted_spans} spans omitted · {trace.withheld_attributes} attributes withheld · {trace.redactions.reduce((n, r) => n + r.count, 0)} text redactions</li></ul></details>
       <details><summary className="cursor-pointer text-sm">Review the full sanitized trace</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(trace, null, 2)}</pre></details>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />I reviewed the sanitized trace before sharing.</label>

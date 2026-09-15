@@ -487,3 +487,20 @@ separate because the consolidation was explicitly declined.
 - Reviewed changes fast-forwarded into main and pushed to abwalls/codandy. Both new commits use abwalls and the approved GitHub noreply address. Active checkout is C:/Users/andre/source/repos/codandy; the code-atlas directory is an archive, not the working repo.
 - Private Sites v6 successfully deployed at https://codandy.abwalls.chatgpt.site from a9662f971b410b1889f9b9375bda43a0f6434034. Access remains owner-only. Hosted UI does not connect to the local Python/Codex services; use http://localhost:5173 for whiteboard and trace workflows. The browser-handoff tool is unavailable in this session; deployment succeeded independently.
 - Backend and frontend remain running for local testing. Next work starts with docs/INTEGRATIONS-PLAN.md I0/T0/T1 (provider foundation and reviewed Linear ticket creation) and observed sequence visualization; see the two Astra review handoffs for boundaries and validation. This final documentation-only checkpoint follows the published application source.
+
+
+### 2026-09-15 - Review of Astra's slice and observed sequence diagrams (Claude implements, Astra reviews)
+
+- **Review of 0ae34af** (Astra's diagram fixes and offline OTLP import):
+  - Re-ran on main: 280 backend tests, ruff and 41 contracts pass, and personal report, case and board hashes are unchanged.
+  - Read the traces normalizer, route, trace API, viewer, worker checkpoint, redacted `clip` and TypeScript generic shadowing. No defects found; suggestions are in CLAUDE-SEQUENCES-2026-09-15.md.
+- **Worker efficiency:** the worker sent and validated the full atlas twice (checkpoint and result). It now sends `atlas` once, then a separate `structure` message. Timeout, crash, error or invalid diagrams after the checkpoint still return the atlas with the unavailable-diagrams limitation.
+- **AD3 observed part** (branch `claude/observed-sequences`):
+  - `lib/sequence-diagram.ts` builds stack sequences (caller to callee, per file or function lifelines, collapsed library frames, async boundaries, raise marker, 60-arrow budget keeping the calls nearest the failure) and trace sequences (service lifelines, parent-to-child in start order, activations to the last descendant, outside lifeline for root, missing and cyclic parents, 80-span budget), plus Mermaid `sequenceDiagram` export with sanitized labels.
+  - `components/sequence-diagram.tsx` renders keyboard-selectable arrows with a detail panel and notes.
+  - Errors & stacks gains a Frames/Sequence toggle per exception, and the trace viewer gains Waterfall/Sequence. `hooks/use-clipboard.ts` is shared with the data model views.
+- **Verification:**
+  - 44 contract tests (3 new, including normalized Sentry evidence), tsc, changed-file ESLint and build pass.
+  - In a first full backend run the worker crash test timed out at its 2 s limit while the production build ran concurrently. It passed three isolated reruns and the final full run recorded in the handoff.
+  - Headless Edge over DevTools against the running dev server: a pasted JavaScript stack rendered 5 lifelines and 6 arrows; the function grouping, keyboard selection and Frames toggle worked. The OTLP file rendered 5 spans across 4 services with activations, missing-parent detail and the Waterfall toggle. At 390 px the page stays 390 px wide and the diagram scrolls inside its container. No console errors.
+- **Not verified:** light themes, very large traces near 1,000 spans, and Sentry events with mixed in-app frames in the browser (covered by contract tests only). Handoff: CLAUDE-SEQUENCES-2026-09-15.md.
