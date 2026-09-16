@@ -727,3 +727,21 @@ test("trace sequence draws parent services to child services in start order", as
   assert.deepEqual([limited.omitted, limited.messages.map(item => item.activeUntil), limited.participants.map(item => item.label)], [3, [1, 1], ["Outside this trace", "web", "api"]]);
   assert.deepEqual(traceSequence(trace, "d".repeat(32)).messages, []);
 });
+
+test("collapsed stack keeps the actual library failure frame", async () => {
+  const { stackSequence } = await import("../lib/sequence-diagram.ts");
+  const exception = { ...stackException, frames: [stackFrame(0, "app", "app.ts", 1), stackFrame(1, "library", "lib.js", 2, false)] };
+  const view = stackSequence(exception, { appOnly: true });
+  assert.equal(view.messages.at(-1).ref.frame, 1);
+  assert.equal(view.messages.at(-1).to, "file:lib.js");
+});
+
+test("Python Linear reviews match the frontend and bind the target", async () => {
+  const { ticketReviewSchema, ticketReceiptSchema } = await import("../lib/tickets-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.settings import Settings; from app.integrations.tickets import Draft,review; print(json.dumps(review(Settings(linear_api_key='test-key'), Draft(title='Review',description='password=secret',team_id='11111111-1111-4111-8111-111111111111'))))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const reviewed = ticketReviewSchema.parse(JSON.parse(result.stdout));
+  assert.equal(reviewed.payload.description.includes('secret'), false);
+  assert.equal(reviewed.digest.length, 64);
+  assert.equal(ticketReceiptSchema.safeParse({ schema_version:'ticket-link-0.1',provider:'linear',external_id:'22222222-2222-4222-8222-222222222222',external_key:'DEMO-1',url:'https://evil.example/issue/DEMO-1',digest:reviewed.digest }).success, false);
+});

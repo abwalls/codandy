@@ -24,7 +24,7 @@ _PATTERNS = (
     ("provider_token", re.compile(
         r"\b(?:sntry[su]_[\w+/=-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_\w{30,}"
         r"|xox[abprs]-[\w-]{10,}|sk-(?:ant-|proj-)?[\w-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}"
-        r"|AKIA[0-9A-Z]{16}|AIza[\w-]{35})"), "[redacted:token]"),
+        r"|lin_api_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[\w-]{35})"), "[redacted:token]"),
     ("url_credentials", re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)[^\s/@:]+:[^\s/@]*@"),
      r"\1[redacted]@"),
     ("authorization", re.compile(r"(?i)\b(bearer|basic)\s+[\w.~+/-]+=*"), r"\1 [redacted]"),

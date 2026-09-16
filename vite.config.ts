@@ -52,7 +52,7 @@ export default defineConfig(async () => {
 
   return {
     server: {
-      proxy: { "/api/boards": { target: "http://127.0.0.1:8000", changeOrigin: true }, "/api/debugging": { target: "http://127.0.0.1:8000", changeOrigin: true }, "/api/analyses": { target: "http://127.0.0.1:8000", changeOrigin: true } },
+      proxy: { "/api/integrations": { target: "http://127.0.0.1:8000", changeOrigin: true }, "/api/boards": { target: "http://127.0.0.1:8000", changeOrigin: true }, "/api/debugging": { target: "http://127.0.0.1:8000", changeOrigin: true }, "/api/analyses": { target: "http://127.0.0.1:8000", changeOrigin: true } },
       ...(managedLinux ? { host: "0.0.0.0", allowedHosts: ["terminal.local"] } : {}),
       watch: {
         ignored: ["**/backend/**", "**/.workspaces/**", "**/.tools/**"],

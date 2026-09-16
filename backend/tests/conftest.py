@@ -24,6 +24,8 @@ def isolate_application_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "investigation_root", str(tmp_path / "investigations"))
     monkeypatch.setattr(settings, "codex_enabled", False)
     monkeypatch.setattr(settings, "codex_home", str(tmp_path / "codex"))
+    monkeypatch.setattr(settings, "integration_root", str(tmp_path / "integrations"))
+    monkeypatch.setattr(settings, "linear_api_key", SecretStr(""))
     monkeypatch.setattr(settings, "sentry_token", SecretStr(""))
     monkeypatch.setattr(settings, "sentry_organization", "")
     # TestClient sends Host: testserver; the application itself allows only local names.

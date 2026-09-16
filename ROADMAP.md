@@ -44,3 +44,7 @@ The previous delivery plan/status report remain in docs/archive/. Their dates, c
 ## 2026-09-15 review checkpoint
 
 AD0–AD2 declared ERD/data-contract views passed desktop/mobile and theme QA after annotation-redaction, generic-shadowing and optional-worker-failure fixes. See ASTRA-DIAGRAMS-CR-2026-09-15.md. Offline M2 trace import is implemented; this does not complete the provider foundation or live integrations. Next: provider foundation and reviewed ticket drafts, then Linear creation with explicit target/payload confirmation; observed stack/trace sequence views can reuse existing evidence.
+
+### Latest delivery: Linear and observed sequences
+
+Observed stack/trace sequences are reviewed; library filtering now keeps the final captured frame. First Linear vertical slice is implemented and fixture-tested: settings/check, teams, reviewed create and durable receipts, reachable from recommendations and whiteboard plans. I0/T0/T1 remain partial until shared transport/registry, fuller targeting/source links and live account validation are complete. Next: validate a user-configured Linear account, expose receipts on source items, then Sentry project/issue browsing. No live ticket was created during development.

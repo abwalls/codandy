@@ -81,3 +81,7 @@ Use `scripts\setup-windows.ps1` for first-time setup and `scripts\start-windows.
 - Add focused tests for ingestion boundaries, parser behavior, schemas, and API contracts.
 - Keep the frontend and Python atlas schemas synchronized.
 - Do not commit `.env`, credentials, cloned repositories, generated workspaces, `.venv`, `node_modules`, or build output.
+
+## Integration checkpoint (2026-09-15)
+
+Local Linear ticket creation is implemented in app/integrations, components/create-ticket.tsx and backend/app/integrations. Credentials remain in backend settings; /api/integrations uses local_only and is never forwarded by the hosted proxy. Tests must also isolate integration_root and linear_api_key. SQLite submission records live in ignored .integrations; preserve them because they prevent duplicate sends. Uncertain submissions must never be retried automatically. Live account verification, generalized registry/shared transport and source-item receipt links remain open. Observed sequence review fixed the collapsed-library final-frame attribution; 46 frontend/API contracts pass. Validation details and next steps are in ASTRA-LINEAR-REVIEW-2026-09-15.md and progress.md.

@@ -504,3 +504,15 @@ separate because the consolidation was explicitly declined.
   - In a first full backend run the worker crash test timed out at its 2 s limit while the production build ran concurrently. It passed three isolated reruns and the final full run recorded in the handoff.
   - Headless Edge over DevTools against the running dev server: a pasted JavaScript stack rendered 5 lifelines and 6 arrows; the function grouping, keyboard selection and Frames toggle worked. The OTLP file rendered 5 spans across 4 services with activations, missing-parent detail and the Waterfall toggle. At 390 px the page stays 390 px wide and the diagram scrolls inside its container. No console errors.
 - **Not verified:** light themes, very large traces near 1,000 spans, and Sentry events with mixed in-app frames in the browser (covered by contract tests only). Handoff: CLAUDE-SEQUENCES-2026-09-15.md.
+
+### 2026-09-15 — Resume: sequence review and Linear ticket workflow
+
+- Resumed on claude/observed-sequences with a clean checkout. Reviewed Claude's worker and observed sequence changes. A new regression reproduced a library-frame filtering defect: the raise marker pointed at an application caller when the real failing frame was hidden. Preserve the final captured frame when collapsing libraries. Trace sequence notes now distinguish activation grouping from time-scaled bars.
+- Implementing a local-only Linear slice: backend-only key, fixed-host bounded GraphQL, explicit connection/team reads, exact scrubbed payload review, and durable SQLite submission reservations/receipts. A failed/uncertain write is never automatically resent. Added Integrations UI and whiteboard plan entry point; live provider validation is not yet performed. Tests and browser QA are in progress.
+
+### 2026-09-15 — Linear workflow validated
+
+- Fixed the reproduced observed-stack attribution bug; final library frame remains visible when other library frames collapse. Added trace activation-scale clarification.
+- Implemented local Linear ticket review/create from Integrations, recommendations and current whiteboard exports. Durable pre-send reservations prevent automatic duplicate sends after timeout/restart. Ledger excludes ticket bodies/credentials. Full provider platform and inline source receipt links remain unfinished.
+- Full backend suite: 291 passed; personal storage hashes unchanged. Follow-up ticket suite: 17 passed including six added transport-boundary cases. Frontend/API contracts: 46 passed. Ruff, TypeScript, changed-file ESLint and production build passed. Mocked Edge desktop/mobile flow passed, with screenshots inspected. No live Linear writes were made.
+- Restarted local backend for the new endpoints. Review and continuation details: ASTRA-LINEAR-REVIEW-2026-09-15.md. Publishing the validated changes next; account-backed testing remains pending.

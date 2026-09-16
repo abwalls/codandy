@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CreateTicket } from "@/components/create-ticket";
 import { ThemePicker } from "@/components/theme-picker";
 import { boardRequest, boardSchema, downloadText, reviewSchema, type Board, type Review } from "@/lib/board-api";
 import { api, recentReportsSchema } from "@/lib/analysis-api";
@@ -79,6 +80,6 @@ export function WhiteboardWorkspace() {
         {planArtifacts.length > 0 && <section className="space-y-2 rounded-xl border bg-card p-4"><h2 className="font-semibold">Saved plans</h2>{[...planArtifacts].reverse().map(a => <Button key={a.id} className="h-auto w-full whitespace-normal" variant="outline" disabled={busy} onClick={() => void action(async () => { setOutputs(z.object({ plan: z.string(), ticket: z.string(), stale: z.boolean() }).parse(await boardRequest(`/${board.id}/outputs/${a.id}`))); })}>{a.plan?.title} · r{a.revision}{dirty || a.revision !== board.revision ? " · stale" : ""}</Button>)}</section>}</>}
       </aside>
     </div>
-    {outputs && <section className="mx-auto mt-6 max-w-5xl rounded-xl border bg-card p-6 print:border-0"><div className="mb-4 flex flex-wrap gap-2 print:hidden"><Button onClick={() => downloadText("plan.md", outputs.plan)}>Download plan.md</Button><Button onClick={() => downloadText("ticket.md", outputs.ticket)}>Download ticket.md</Button><Button variant="outline" onClick={() => void action(async () => { await navigator.clipboard.writeText(outputs.ticket); setSavedMessage("Issue draft copied"); })}>Copy GitHub issue draft</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>{outputs.stale && <p className="mb-4 font-semibold">Stale plan: the board has changed.</p>}<pre className="whitespace-pre-wrap break-words font-sans text-sm leading-6">{outputs.ticket}</pre></section>}
+    {outputs && <section className="mx-auto mt-6 max-w-5xl rounded-xl border bg-card p-6 print:border-0"><div className="mb-4 flex flex-wrap gap-2 print:hidden"><Button onClick={() => downloadText("plan.md", outputs.plan)}>Download plan.md</Button><Button onClick={() => downloadText("ticket.md", outputs.ticket)}>Download ticket.md</Button><Button variant="outline" onClick={() => void action(async () => { await navigator.clipboard.writeText(outputs.ticket); setSavedMessage("Issue draft copied"); })}>Copy GitHub issue draft</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>{!outputs.stale && board && <CreateTicket key={`${board.id}:${board.revision}`} seed={{ title: board.title, description: `AI-proposed whiteboard plan; verify before implementation.\n\n${outputs.ticket}`, source_kind: "board", source_id: board.id }} />}{outputs.stale && <p className="mb-4 font-semibold">Stale plan: the board has changed.</p>}<pre className="whitespace-pre-wrap break-words font-sans text-sm leading-6">{outputs.ticket}</pre></section>}
   </main>;
 }

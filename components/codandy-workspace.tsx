@@ -146,7 +146,7 @@ function Intake({ onAnalyze, onUpload, onDemo, onImport, onReopen }: { onAnalyze
 
   return (
     <main className="atlas-grid min-h-svh bg-[var(--background)] text-slate-100">
-      <header className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+      <header className="mx-auto flex w-full max-w-[1440px] flex-wrap gap-4 items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
         <div className="flex items-center gap-3">
           <BrandMark />
           <div>
@@ -154,7 +154,7 @@ function Intake({ onAnalyze, onUpload, onDemo, onImport, onReopen }: { onAnalyze
             <div className="text-xs text-slate-500">Repository intelligence</div>
           </div>
         </div>
-        <div className="flex items-center gap-2"><Button variant="outline" asChild><Link href="/debugging">Errors & stacks</Link></Button><Button variant="outline" asChild><Link href="/whiteboard">Whiteboard</Link></Button><ThemePicker /><Button
+        <div className="flex flex-wrap items-center gap-2"><Button variant="outline" asChild><Link href="/debugging">Errors & stacks</Link></Button><Button variant="outline" asChild><Link href="/whiteboard">Whiteboard</Link></Button><Button variant="outline" asChild><Link href="/integrations">Integrations</Link></Button><ThemePicker /><Button
           variant="outline"
           className="h-10 border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
           onClick={() => window.alert("ChatGPT authentication is scaffolded for the next milestone.")}

@@ -351,3 +351,11 @@ The offline part of M2 can precede I0 because it makes no outbound provider call
 Keep Linear as the provisional first tracker and .env as the credential seam until a different user preference is supplied. A reviewed ticket draft is not authorization for hidden future writes: each actual create action must identify the provider, target and current payload. Datadog, Jira and ClickUp require their own tested adapters; they are not available merely because they appear in this plan.
 
 Primary OTLP reference: https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding
+
+## 2026-09-15 Linear implementation checkpoint
+
+A first vertical slice of I0/T0/T1 is implemented: fixed-host bounded Linear GraphQL transport, backend SecretStr key, explicit viewer check and first 50 teams, exact scrubbed payload review, create issue, and durable local submission receipts. The Integrations page, Recommended changes and current whiteboard ticket exports expose the workflow. Provider documentation reconfirmed at https://linear.app/developers/graphql.
+
+The local ledger uses SQLite under CODANDY_INTEGRATION_ROOT, with transactional submission reservation before network I/O. It records a source digest, target, review digest, submission key, timestamp, outcome and safe receipt; no ticket body or credential is stored. Equal review digests or repeated keys cannot send twice, including after restart. Ambiguous failures remain uncertain and require checking Linear. Mutations are never retried automatically. Review digests bind content, team, source and the configured credential identity.
+
+This does not complete all I0/T0/T1 criteria: the Sentry transport has not migrated, there is no generalized provider registry or custom-host support, optional projects/labels and team pagination remain open, and source items do not yet show their attached receipt/status inline. Receipt history is available on Integrations. Whiteboard exports currently create one editable ticket for the reviewed plan, not one issue per task. Live Linear account validation is still pending; development uses mocked transports only. Jira, ClickUp and Datadog remain planned. Preserve these limits when extending the workflow.

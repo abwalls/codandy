@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     report_root: str | None = None
     board_root: str | None = ".boards"
     investigation_root: str | None = ".investigations"
+    integration_root: str | None = ".integrations"
+    linear_api_key: SecretStr = SecretStr("")
     sentry_token: SecretStr = SecretStr("")
     sentry_host: Literal["sentry.io", "us.sentry.io", "de.sentry.io"] = "sentry.io"
     sentry_organization: str = ""

@@ -79,7 +79,7 @@ export function stackSequence(exception: ExceptionRecord, options: StackOptions 
   };
 
   const collapse = appOnly && exception.frames.some(frame => frame.in_app !== false);
-  const visible = collapse ? exception.frames.filter(frame => frame.in_app !== false) : exception.frames;
+  const visible = collapse ? exception.frames.filter((frame, index) => frame.in_app !== false || index === exception.frames.length - 1) : exception.frames;
   const messages: SequenceMessage[] = [];
   let caller = "outside";
   let previous: Frame | null = null;
@@ -127,6 +127,7 @@ export function traceSequence(trace: Trace, traceId: string, options: { limit?: 
   const notes = [
     "Traced order: each arrow is a span, ordered by start time and drawn from its parent span's service to its own service. Parent links come from the imported IDs, not from source code.",
     "Durations are elapsed wall time, not CPU time. Sibling spans that overlap may have run concurrently.",
+    "Activation bars group descendants; their drawn height is not a time scale. Use the waterfall for timing.",
   ];
   const spans = trace.spans.filter(span => span.trace_id === traceId).sort((a, b) => {
     const left = BigInt(a.start_ns);

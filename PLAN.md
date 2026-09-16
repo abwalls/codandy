@@ -135,3 +135,7 @@ On branch `claude/architecture-diagrams`, awaiting Astra's review, the analysis 
 - **Data contracts:** Pydantic models, dataclasses, TypedDicts, TypeScript interfaces and object type aliases.
 
 Extraction is static and bounded. It has its own share of the analysis time budget and is withheld with a visible limitation rather than failing the report. Reports saved earlier still open; their diagrams need a new analysis. Status by milestone is in §13 of the diagrams plan.
+
+### 2026-09-15 ticketing delivery update
+
+The first local Linear creation workflow is implemented from Recommended changes, whiteboard plan exports and Integrations. Exact scrubbed payload review and explicit confirmation precede each external write. A durable submission ledger prevents automatic duplicate retries, including after restart. Offline fixtures and browser mocks validate the workflow; live account validation remains open. See docs/INTEGRATIONS-PLAN.md for unfinished shared-provider, pagination and source-link criteria. Observed stack/trace sequence views are reviewed, with a fix preserving the true final captured frame when library frames are collapsed.
