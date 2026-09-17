@@ -314,3 +314,18 @@ Implementation checks and remaining work are recorded in progress.md. Do not mar
 ### 2026-09-16 — Whiteboard planning delivery
 
 Structured task cards now expose dependencies, acceptance criteria, verification and proposed paths. Each task can be prepared as an individually reviewed Linear ticket, with receipt identity scoped to board/plan/task; no automatic issue dependency links are claimed. Coding-assistant handoffs and the exact reviewed drawing context are downloadable. A reading guide discloses freehand, unlabeled, dangling and omitted elements; group context is retained as user design. Visual image interpretation, evidence cards, live provider validation and automatic implementation remain open.
+
+### Next slice: reviewed visual interpretation (capability research, not shipped)
+
+Official App Server documentation checked 2026-09-16 supports `image` and `localImage` items in `turn/start`: https://learn.chatgpt.com/docs/app-server . The existing bridge currently sends text only. This establishes the protocol shape, not compatibility with every account/model or a successful local image request.
+
+Implementation gates:
+
+1. Keep text interpretation as the default and expose visual interpretation as a separate explicit action. Use an image capability spike with synthetic content and the chosen local account/model; do not send a personal board for a capability test.
+2. Render a bounded preview from a server-sanitized scene, stripping embedded files, hidden/deleted content, unsupported metadata and secret-bearing text. Keep actual stroke/shape geometry, with at most 2,048 pixels on either axis. Text redaction cannot detect secrets drawn as handwriting; clearly require visual review.
+3. Show the exact PNG beside the text packet, with dimensions, omissions and a distinct image consent checkbox. Bind review to board revision, text digest and image SHA-256. Editing the board or image invalidates consent; no automatic fallback that changes what was shared.
+4. Bound request bytes, decoded pixels and image format. Never accept a client-supplied local file path or remote image URL. Create only per-request temporary files under the managed context directory and remove them on completion, rejection, timeout and cancellation. Do not store image bodies in board artifacts or logs.
+5. Keep tools disabled. Visual findings require a new explicit `visual_inference` basis and cited retained element IDs where applicable. They remain hypotheses about user intent, never static facts. Validate the schema in Python and TypeScript and keep existing saved boards readable.
+6. Test malformed/oversized images, prompt injection drawn in text, stale image reviews, changed board during inference, cleanup on bridge errors, text-only compatibility and downstream plan/ticket provenance. Perform an authorized synthetic live image check before calling the feature integrated.
+
+After this slice, prioritize structured clarification answers and retained source/case evidence cards, then plan-version comparison. Do not broaden to automatic code execution.

@@ -12,7 +12,7 @@
 ## Validation
 
 - 309 isolated backend tests passed; Ruff and TypeScript/changed-file ESLint passed. Existing two dependency deprecation warnings remain.
-- 47 existing frontend contracts passed; one new Python-to-TypeScript task output contract added for the final validation run.
+- 48 frontend/API contracts passed, including the new Python-to-TypeScript task output contract.
 - Mocked Edge workflow passed reading guide, context download, plan task rendering, individual ticket draft, assistant handoff download, edit invalidation and 390px mobile overflow checks. No page errors. Desktop screenshot inspected.
 - Production build passed with existing bundle/plugin warnings.
 - No live AI inference, Sentry calls or Linear writes were used for QA. The earlier direct-drawing save/reopen and Sentry browse browser tests passed in the interrupted checkpoint.
