@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { InvestigationBrief } from "@/components/investigation-brief";
 import { InvestigationSource } from "@/components/investigation-source";
 import { InvestigationCases } from "@/components/investigation-cases";
+import { SentryBrowser } from "@/components/sentry-browser";
 import { TraceViewer } from "@/components/trace-viewer";
 import { StackViews } from "@/components/sequence-diagram";
 import { ThemePicker } from "@/components/theme-picker";
@@ -62,6 +63,7 @@ export function DebuggingWorkspace() {
         <InvestigationCases observation={observation} disabled={busy} onOpen={(value, id) => { setCaseId(id); setObservation(value); setReviewed(false); setError(""); }} />
         <div><h1 className="text-2xl font-semibold">Errors & stacks</h1><p className="mt-2 text-sm text-muted-foreground">Inspect a Sentry event or a Python, JavaScript or .NET stack. No repository execution is required.</p></div>
         <section className="space-y-3 rounded-xl border bg-card p-4"><h2 className="font-semibold">Read from Sentry</h2><p role="status" className="text-sm text-muted-foreground">{status}</p>
+          <SentryBrowser disabled={busy} onSelect={id => { setIssue(id); setEvent("latest"); }} />
           <label className="block text-sm">Issue ID<Input value={issue} disabled={busy} onChange={e => setIssue(e.target.value)} placeholder="Numeric issue ID" /></label>
           <label className="block text-sm">Event<Input value={event} disabled={busy} onChange={e => setEvent(e.target.value)} placeholder="latest or event ID" /></label>
           <Button disabled={busy || !/^\d{1,32}$/.test(issue) || !/^(latest|oldest|recommended|[a-fA-F0-9]{32})$/.test(event)} onClick={() => run(`/sentry/issues/${issue}/events/${event}`)}>Fetch event</Button>

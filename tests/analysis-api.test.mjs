@@ -745,3 +745,29 @@ test("Python Linear reviews match the frontend and bind the target", async () =>
   assert.equal(reviewed.digest.length, 64);
   assert.equal(ticketReceiptSchema.safeParse({ schema_version:'ticket-link-0.1',provider:'linear',external_id:'22222222-2222-4222-8222-222222222222',external_key:'DEMO-1',url:'https://evil.example/issue/DEMO-1',digest:reviewed.digest }).success, false);
 });
+
+test("Sentry listing contracts accept scrubbed Python output and reject URL cursors", async () => {
+  const { sentryProjectsSchema, sentryIssuesSchema } = await import("../lib/debugging-api.ts");
+  const result = spawnSync(python, ["-c", `
+import json
+from app.debugging import sentry_client
+from tests.test_debugging import config
+sentry_client._fetch=lambda *args: (json.dumps([{"id":"7","name":"password=secret","slug":"demo"}]).encode(), '')
+print(json.dumps(sentry_client.browse(config(), 'projects')))
+`], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status,0,result.stderr);
+  const projects=sentryProjectsSchema.parse(JSON.parse(result.stdout));
+  assert.equal(projects.items[0].name.includes('secret'),false);
+  assert.equal(sentryProjectsSchema.safeParse({...projects,next_cursor:'https://evil.example'}).success,false);
+  assert.equal(sentryIssuesSchema.safeParse({items:[{id:'123',title:'Error',culprit:'f',status:'unresolved'}],notes:[],next_cursor:'0:50:0'}).success,true);
+});
+
+test("whiteboard structured plan outputs match Python and reject missing verification", async () => {
+  const { planOutputsSchema } = await import("../lib/board-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.boards import Plan, Task; from uuid import uuid4; p=Plan(title='Design', objective='Build queue', in_scope=[], out_of_scope=[], decisions=[], tasks=[Task(id='one', title='Queue', description='Add adapter', depends_on=[], acceptance_criteria=['Bounded'], verification=['Exercise fixture'], proposed_paths=[])], risks=[], open_questions=[]); print(json.dumps(dict(plan='Plan markdown',ticket='Ticket markdown',stale=False,artifact_id=str(uuid4()),revision=1,structured_plan=p.model_dump())))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout);
+  assert.equal(planOutputsSchema.parse(value).structured_plan.tasks[0].title, "Queue");
+  value.structured_plan.tasks[0].verification = [];
+  assert.equal(planOutputsSchema.safeParse(value).success, false);
+});

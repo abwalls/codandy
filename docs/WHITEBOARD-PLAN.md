@@ -310,3 +310,7 @@ Approved direction: deliver the draw → reviewed interpretation → corrections
 - Store bounds: 200 boards, 4 MiB per saved board including artifacts, 5,000 elements, 2,000 characters per text element, 20 combined saved AI artifacts, five requests per stage per revision. Tests must isolate board_root as well as reports and cases.
 
 Implementation checks and remaining work are recorded in progress.md. Do not mark W0–W5 wholly complete based on this first functional loop.
+
+### 2026-09-16 — Whiteboard planning delivery
+
+Structured task cards now expose dependencies, acceptance criteria, verification and proposed paths. Each task can be prepared as an individually reviewed Linear ticket, with receipt identity scoped to board/plan/task; no automatic issue dependency links are claimed. Coding-assistant handoffs and the exact reviewed drawing context are downloadable. A reading guide discloses freehand, unlabeled, dangling and omitted elements; group context is retained as user design. Visual image interpretation, evidence cards, live provider validation and automatic implementation remain open.

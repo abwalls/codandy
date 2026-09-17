@@ -149,4 +149,5 @@ def outputs(identifier: UUID, artifact_id: UUID, request: Request):
     if artifact is None:
         raise HTTPException(404, "Plan version unavailable")
     return {"plan": render_plan(board, artifact), "ticket": render_plan(board, artifact, ticket=True),
-            "stale": artifact.revision != board.revision}
+            "stale": artifact.revision != board.revision, "artifact_id": str(artifact.id),
+            "revision": artifact.revision, "structured_plan": artifact.plan.model_dump()}

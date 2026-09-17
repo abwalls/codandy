@@ -3,8 +3,11 @@ import { z } from "zod";
 const finding = z.object({ text: z.string(), element_ids: z.array(z.string()), basis: z.enum(["drawn", "answered", "assumed"]) });
 const interpretation = z.object({ summary: z.string(), findings: z.array(finding), questions: z.array(z.string()), assumptions: z.array(z.string()) });
 export const boardSchema = z.object({ schema_version: z.literal("board-0.1"), id: z.string().uuid(), revision: z.number().int(), title: z.string(), notes: z.string(), snapshot_id: z.string().nullable(), scene: z.object({ elements: z.array(z.record(z.unknown())) }), artifacts: z.array(z.object({ id: z.string(), revision: z.number(), stage: z.enum(["interpret", "plan"]), model: z.string(), interpretation: interpretation.nullable(), plan: z.object({ title: z.string(), objective: z.string() }).passthrough().nullable() })) });
+export const planTaskSchema = z.object({ id: z.string(), title: z.string(), description: z.string(), depends_on: z.array(z.string()), acceptance_criteria: z.array(z.string()).min(1), verification: z.array(z.string()).min(1), proposed_paths: z.array(z.string()) });
+export const planOutputsSchema = z.object({ plan: z.string(), ticket: z.string(), stale: z.boolean(), artifact_id: z.string().uuid(), revision: z.number().int().positive(), structured_plan: z.object({ title: z.string(), objective: z.string(), tasks: z.array(planTaskSchema).min(1), in_scope: z.array(z.string()), out_of_scope: z.array(z.string()), decisions: z.array(finding), risks: z.array(z.string()), open_questions: z.array(z.string()) }) });
+export type PlanOutputs = z.infer<typeof planOutputsSchema>;
 export type Board = z.infer<typeof boardSchema>;
-export const reviewSchema = z.object({ digest: z.string(), revision: z.number(), stage: z.enum(["interpret", "plan"]), text: z.string() });
+export const reviewSchema = z.object({ digest: z.string(), revision: z.number(), stage: z.enum(["interpret", "plan"]), text: z.string(), reading_guide: z.object({ included_elements: z.number().int().nonnegative(), omitted_elements: z.number().int().nonnegative(), freehand_elements: z.number().int().nonnegative(), unbound_connectors: z.number().int().nonnegative(), unlabeled_shapes: z.number().int().nonnegative() }).optional() });
 export type Review = z.infer<typeof reviewSchema>;
 export async function boardRequest(path = "", method = "GET", body?: unknown) {
   if (!["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) throw new Error("Open localhost:5173/whiteboard with the Python backend to work with local boards.");

@@ -183,3 +183,42 @@ def test_transport_disables_proxies_and_redirects(monkeypatch):
     assert any(isinstance(h, ProxyHandler) and h.proxies == {} for h in handlers)
     redirect = next(h for h in handlers if isinstance(h, linear.NoRedirect))
     assert redirect.redirect_request(None, None, 302, "", {}, "https://evil.example") is None
+
+def test_source_receipts_survive_restart_and_require_ack_for_additional_ticket(tmp_path, monkeypatch):
+    from app.integrations.tickets import Source
+    monkeypatch.setattr(linear, "create_issue", receipt)
+    cfg = config()
+    value = draft().model_copy(update={"source_kind": "board", "source_id": "board-a"})
+    first = submission(cfg, value)
+    store = TicketStore(tmp_path)
+    store.submit(cfg, first)
+    source = Source(source_kind="board", source_id="board-a")
+    restored = TicketStore(tmp_path)
+    assert restored.count_source(source) == 1
+    assert restored.history(source)["items"][0]["receipt"]["external_key"] == "DEMO-1"
+    assert restored.history(Source(source_kind="case", source_id="board-a"))["items"] == []
+    assert restored.history(Source(source_kind="board", source_id="board-b"))["items"] == []
+    second = submission(cfg, value.model_copy(update={"title": "Follow-up work"}))
+    with pytest.raises(TicketConflict, match="already has a ticket"):
+        restored.submit(cfg, second)
+    restored.submit(cfg, second.model_copy(update={"acknowledge_existing": True}))
+    assert restored.count_source(source) == 2
+    # Exact retry still returns its receipt without an additional-ticket acknowledgement.
+    assert restored.submit(cfg, first)["external_key"] == "DEMO-1"
+
+
+def test_review_reports_previous_submissions_and_local_links(monkeypatch):
+    monkeypatch.setattr(settings, "linear_api_key", config().linear_api_key)
+    monkeypatch.setattr(linear, "create_issue", receipt)
+    with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 123)) as client:
+        raw = draft().model_copy(update={"source_kind": "board", "source_id": "board-private"}).model_dump(mode="json")
+        packet = client.post("/api/integrations/tickets/review", json=raw, headers=HEADERS).json()
+        assert packet["previous_submissions"] == 0
+        payload = {**raw, "digest": packet["digest"], "idempotency_key": str(uuid4()), "confirmed": True}
+        assert client.post("/api/integrations/tickets", json=payload, headers=HEADERS).status_code == 200
+        assert client.post("/api/integrations/tickets/review", json=raw, headers=HEADERS).json()["previous_submissions"] == 1
+        source = {"source_kind": "board", "source_id": "board-private"}
+        assert client.post("/api/integrations/tickets/links", json=source).status_code == 403
+        links = client.post("/api/integrations/tickets/links", json=source, headers=HEADERS)
+        assert links.json()["items"][0]["receipt"]["external_key"] == "DEMO-1"
+        assert "board-private" not in links.text

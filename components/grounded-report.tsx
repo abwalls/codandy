@@ -18,7 +18,7 @@ const categoryLabels: Record<string, string> = {
   maintainability: "Maintainability", potential_security_risk: "Potential security risks",
 };
 
-function EvidenceCard({ item, nodes, onInspect, recommendations }: { recommendations: boolean; item: GroundedReportItem; nodes: Map<string, AnalysisAtlas["nodes"][number]>; onInspect: (id: string) => void }) {
+function EvidenceCard({ item, nodes, onInspect, recommendations, sourceScope }: { sourceScope: string; recommendations: boolean; item: GroundedReportItem; nodes: Map<string, AnalysisAtlas["nodes"][number]>; onInspect: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const visibleIds = expanded ? item.node_ids : item.node_ids.slice(0, 5);
   return <article className="min-w-0 rounded-2xl border border-white/10 bg-[var(--surface-4)] p-5 sm:p-6">
@@ -39,7 +39,7 @@ function EvidenceCard({ item, nodes, onInspect, recommendations }: { recommendat
     </div>)}</div>}
     {item.approach.length > 0 && <div className="mt-5"><h4 className="text-sm font-semibold text-slate-200">Recommended approach</h4><ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-400">{item.approach.map((line, i) => <li key={i}>{line}</li>)}</ol></div>}
     {item.verification.length > 0 && <div className="mt-5"><h4 className="flex items-center gap-2 text-sm font-semibold text-slate-200"><ShieldCheck className="size-4 text-emerald-300" />How to verify</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-400">{item.verification.map((line, i) => <li key={i}>{line}</li>)}</ul></div>}
-    {recommendations && <div className="mt-4"><CreateTicket key={item.id} seed={{ title: item.title, source_kind: "recommendation", source_id: item.id, description: [
+    {recommendations && <div className="mt-4"><CreateTicket key={JSON.stringify([sourceScope, item.id])} seed={{ title: item.title, source_kind: "recommendation", source_id: JSON.stringify([sourceScope, item.id]), description: [
       `Static review opportunity (${item.basis}); verify before implementation.`, item.description,
       "Suggested approach:", ...item.approach.map(value => `- ${value}`),
       "Verification:", ...item.verification.map(value => `- ${value}`),
@@ -67,7 +67,7 @@ export function GroundedSection({ section, atlas, onInspect, recommendations = f
       <div className="flex flex-wrap gap-3"><Input aria-label="Search report" placeholder="Search report or source paths" value={search} onChange={e => { setSearch(e.target.value); setLimit(12); }} className="min-w-0 flex-1" />
         <select aria-label="Report category" value={category} onChange={e => { setCategory(e.target.value); setLimit(12); }} className="max-w-full rounded-md border border-white/10 bg-[var(--surface-4)] p-2 text-sm"><option value="all">All categories</option>{categories.map(value => <option key={value} value={value}>{categoryLabels[value] || value}</option>)}</select></div>
       <p className="text-xs text-slate-500">{filtered.length} matching {recommendations ? "review opportunities" : "report items"}</p>
-      <div className="grid items-start gap-4 xl:grid-cols-2">{filtered.slice(0, limit).map(item => <EvidenceCard key={item.id} item={item} nodes={nodes} onInspect={onInspect} recommendations={recommendations} />)}</div>
+      <div className="grid items-start gap-4 xl:grid-cols-2">{filtered.slice(0, limit).map(item => <EvidenceCard key={item.id} item={item} nodes={nodes} onInspect={onInspect} recommendations={recommendations} sourceScope={JSON.stringify([atlas.repository.url || atlas.repository.name, atlas.repository.commit || atlas.repository.ref])} />)}</div>
       {!filtered.length && <p className="rounded-xl border border-white/10 p-6 text-slate-400">No report items match this search.</p>}
       {filtered.length > limit && <Button variant="outline" onClick={() => setLimit(limit + 12)}>Show more report items</Button>}
     </> : <div className="rounded-2xl border border-white/10 bg-[var(--surface-4)] p-6"><h3 className="text-lg font-semibold">{recommendations ? "No rule matches found" : "No supported evidence detected"}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{recommendations ? "The supported rules did not identify a review opportunity in the indexed source. This does not establish that the repository is secure, fast, or free of defects." : "The current analyzer did not find enough supported graph evidence for this section. Check the codebase index and coverage limitations below."}</p></div>}

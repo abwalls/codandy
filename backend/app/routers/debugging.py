@@ -2,12 +2,12 @@
 
 import threading
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.debugging.models import DebuggingLimits, Observation
 from app.debugging.payload import NormalizationError
-from app.debugging.sentry_client import SentryError, fetch_event
+from app.debugging.sentry_client import SentryError, browse, fetch_event
 from app.debugging.sentry_event import normalize_sentry_event_bytes
 from app.debugging.stacks import normalize_stack_text
 from app.debugging.traces import TraceImport, normalize_trace_bytes
@@ -95,3 +95,26 @@ async def import_trace(request: Request):
         raise HTTPException(422, str(exc)) from None
     finally:
         busy.release()
+
+
+def listing(kind, project, query, cursor):
+    if not busy.acquire(blocking=False):
+        raise HTTPException(409, "Another debugging request is running")
+    try:
+        return browse(settings, kind, project=project, query=query, cursor=cursor)
+    except SentryError as exc:
+        raise HTTPException(502, str(exc)) from None
+    finally:
+        busy.release()
+
+
+@router.get("/sentry/projects")
+def projects(query: str = Query(default="", max_length=300), cursor: str = Query(default="", max_length=44)):
+    return listing("projects", "", query, cursor)
+
+
+@router.get("/sentry/issues")
+def issues(project: str = Query(pattern=r"^[0-9]{1,32}$"),
+           query: str = Query(default="is:unresolved", max_length=300),
+           cursor: str = Query(default="", max_length=44)):
+    return listing("issues", project, query, cursor)

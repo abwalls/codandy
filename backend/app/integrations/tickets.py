@@ -24,13 +24,23 @@ class Draft(Contract):
     description: str = Field(max_length=16000)
     team_id: UUID
     source_kind: Literal["manual", "board", "recommendation", "case"] = "manual"
-    source_id: str = Field(default="", max_length=200)
+    source_id: str = Field(default="", max_length=2048)
+
+
+class Source(Contract):
+    source_kind: Literal["manual", "board", "recommendation", "case"]
+    source_id: str = Field(min_length=1, max_length=2048)
+
+
+def source_digest(source):
+    return hashlib.sha256(f"{source.source_kind}:{source.source_id}".encode()).hexdigest()
 
 
 class Submission(Draft):
     digest: str = Field(pattern=r"^[a-f0-9]{64}$")
     idempotency_key: UUID
     confirmed: Literal[True]
+    acknowledge_existing: bool = False
 
 
 def review(config, draft):
@@ -65,6 +75,8 @@ class TicketStore:
                 db.execute("CREATE TABLE IF NOT EXISTS submissions (key TEXT PRIMARY KEY, digest TEXT UNIQUE NOT NULL, "
                            "target TEXT NOT NULL, source TEXT NOT NULL, state TEXT NOT NULL, receipt TEXT, created TEXT NOT NULL)")
 
+                db.execute("CREATE INDEX IF NOT EXISTS submissions_source ON submissions(source)")
+
     @contextmanager
     def connect(self):
         if self.path is None:
@@ -81,7 +93,7 @@ class TicketStore:
         if packet["digest"] != draft.digest:
             raise TicketConflict("Draft, target or connection changed. Review the current payload again.")
         key = str(draft.idempotency_key)
-        source = hashlib.sha256(f"{draft.source_kind}:{draft.source_id}".encode()).hexdigest()
+        source = source_digest(draft)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             rows = db.execute("SELECT key,digest,state,receipt FROM submissions WHERE key=? OR digest=?",
@@ -93,6 +105,9 @@ class TicketStore:
                 if row[2] == "created":
                     return json.loads(row[3])
                 raise TicketConflict("This submission may already exist in Linear. Check the team before making another ticket.")
+            if (draft.source_id and not draft.acknowledge_existing
+                    and db.execute("SELECT 1 FROM submissions WHERE source=? LIMIT 1", (source,)).fetchone()):
+                raise TicketConflict("This source already has a ticket submission. Review its linked tickets and acknowledge creating another.")
             if db.execute("SELECT count(*) FROM submissions").fetchone()[0] >= 10000:
                 raise TicketConflict("Local ticket ledger is full; preserve it before configuring a new storage directory")
             db.execute("INSERT INTO submissions VALUES (?,?,?,?,?,?,?)",
@@ -104,8 +119,18 @@ class TicketStore:
             db.execute("UPDATE submissions SET state='created',receipt=? WHERE key=?", (json.dumps(receipt), key))
         return receipt
 
-    def history(self):
+    def count_source(self, source):
+        if not source.source_id:
+            return 0
         with self.connect() as db:
-            rows = db.execute("SELECT state,receipt,created FROM submissions ORDER BY created DESC LIMIT 50").fetchall()
+            return db.execute("SELECT count(*) FROM submissions WHERE source=?", (source_digest(source),)).fetchone()[0]
+
+    def history(self, source=None):
+        with self.connect() as db:
+            if source is None:
+                rows = db.execute("SELECT state,receipt,created FROM submissions ORDER BY created DESC LIMIT 50").fetchall()
+            else:
+                rows = db.execute("SELECT state,receipt,created FROM submissions WHERE source=? ORDER BY created DESC LIMIT 50",
+                                  (source_digest(source),)).fetchall()
         return {"items": [{"state": row[0], "receipt": json.loads(row[1]) if row[1] else None,
                             "created_at": row[2]} for row in rows]}

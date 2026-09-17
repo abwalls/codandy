@@ -522,3 +522,32 @@ separate because the consolidation was explicitly declined.
 - Main pushed to abwalls/codandy; application commit 15ef3661e0b9aa78cf64e1d2a4aa138a21ad5043 uses only the approved personal noreply identity. Claude's observed-sequence work is included. Private Sites v7 deployed successfully at https://codandy.abwalls.chatgpt.site with owner-only access unchanged.
 - Backend health is OK and local UI remains running. Start testing at http://localhost:5173/integrations. Linear is not configured on this backend yet; set CODANDY_LINEAR_API_KEY in backend/.env and restart, then use the explicit connection test. Never create a live ticket without reviewing its target and contents. Hosted preview cannot access local provider services.
 - Next implementation: source-item receipt links/duplicate warnings, fuller Linear targets, then shared provider foundations and Sentry project/issue browsing. Live account validation is a separate user-configured gate. Review notes: ASTRA-LINEAR-REVIEW-2026-09-15.md. This documentation-only checkpoint follows the deployed application source.
+
+### 2026-09-16 — Resume: direct drawing and linked ticket history
+
+- Resumed clean main at bf8a2cb. Addressing the user's whiteboard discovery problem first: the starting screen now contains the real editable canvas, a title and Save drawing and continue. JSON import is secondary under Open an exported board. Unsaved drawing uses the existing leave warning and can be downloaded before a backend save. Existing saved-board autosave remains available after the first save.
+- Next slice: recover linked ticket receipts from source items and warn about previous/uncertain submissions. Validation is in progress; no provider calls are authorized merely by opening these views.
+
+### 2026-09-16 — Linked tickets and local startup checkpoint
+
+- Source-filtered ticket history and duplicate acknowledgement pass 19 ticket tests. Recommendation source IDs now include repository/revision scope; board IDs remain stable. No provider reads occur when showing local links.
+- Found a real local runtime gap during browser QA: the old frontend process had stale proxy configuration, and restarting exposed a hung Windows hosted Worker runtime. Portable local development now uses Vinext's normal runtime; Cloudflare remains enabled for deployment builds and managed Linux. The actual localhost integration request now returns 200. Cold dependency compilation is still slow; direct drawing browser recheck is pending.
+- Began the next Sentry slice: bounded project and issue browsing, reuse of the existing fixed-host event transport, validated cursors without following provider URLs, narrow scrubbed listing fields, and explicit issue selection before fetching an event. No live provider requests have been made.
+
+### 2026-09-16 — Direct drawing, ticket links and Sentry browse validated
+
+- Direct-drawing Edge QA passed: draw before any New board click, save with shapes, reopen, read linked tickets, mobile layout, no page errors. Synthetic QA boards were deleted by their returned IDs. Actual localhost integration requests now return 200 after the dev runtime/proxy repair.
+- Source-linked receipts and duplicate acknowledgement passed backend tests and a mocked desktop/mobile confirmation workflow. Same-draft retries preserve idempotency; changed drafts for an existing source require acknowledgement. Scope distinguishes repository/revision and source kind.
+- Sentry browse passed mocked desktop/mobile pagination and explicit selection checks; no event is automatically fetched. Existing event import tests pass after sharing transport. No live Sentry/Linear requests were made.
+- Full isolated backend suite: 307 passed, personal storage hashes unchanged. All 47 frontend/API contracts, Ruff, TypeScript and changed-file ESLint passed. Hosted production build is completing separately from the repaired local runtime. Next: publish this checkpoint, then continue whiteboard planning conveniences and debugging evidence workflows.
+
+### 2026-09-16 — Resumed: whiteboard tasks and assistant handoff
+
+- Resumed the uncommitted direct-drawing, ticket receipt and Sentry browsing checkpoint. Added structured plan task cards, acceptance/verification criteria, per-task reviewed Linear drafts, and copy/download coding-assistant handoffs. Task receipts are scoped to board, plan version and task. Existing full-plan ticket creation is retained.
+- Added a drawing reading guide with freehand/unlabeled/dangling counts, grouped element context, and reviewed context download. Missing parent references are cleared; no drawn relationship becomes a code fact. Image-based interpretation remains unimplemented. Validation and browser review are in progress.
+
+### 2026-09-16 — Planning workflow validated
+
+- 309 backend tests, 48 frontend/API contracts, Ruff, TypeScript, changed-file ESLint and production build pass. Windows pytest temp-folder ACL failures were resolved by using a fresh per-run folder under the active checkout; no application regression was involved.
+- Mocked Edge QA passed task rendering, per-task Linear draft, drawing context/handoff downloads, edit invalidation, mobile layout and no page errors. Desktop screenshot inspected. No live AI/provider requests were made. Backend restarted with the new endpoints; frontend remains running.
+- Claude handoff: ASTRA-WHITEBOARD-TASKS-REVIEW-2026-09-16.md plus ASTRA-DRAWING-SENTRY-REVIEW-2026-09-16.md. Publication follows this checkpoint. Next: reviewed visual-input capability spike, structured clarification and evidence cards; fuller Linear targets and live integration gates remain open.

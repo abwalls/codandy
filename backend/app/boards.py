@@ -225,7 +225,8 @@ def packet(board, stage, atlas=None):
     for e in elements:
         item = {"id": e["id"], "type": e["type"], "text": redactor.text(e.get("text", ""), "board"),
                 "box": [round(e.get(k, 0), 1) for k in ("x", "y", "width", "height")],
-                "container": e.get("containerId"), "frame": e.get("frameId")}
+                "container": e.get("containerId"), "frame": e.get("frameId"),
+                "groups": e.get("groupIds", [])[:20]}
         if e["type"] in {"arrow", "line"}:
             item["ends"] = [(e.get(k) or {}).get("elementId") for k in ("startBinding", "endBinding")]
             item["ends"] = [v if v in ids else None for v in item["ends"]]
@@ -254,11 +255,25 @@ def packet(board, stage, atlas=None):
         raise ValueError("Board notes and interpretation exceed the review budget; shorten them")
     retained = {e["id"] for e in records}
     for item in records:
+        for key in ("container", "frame"):
+            if item[key] not in retained:
+                item[key] = None
         if "ends" in item:
             item["ends"] = [identifier if identifier in retained else None for identifier in item["ends"]]
+    labeled = {v.get("containerId") for v in elements if v.get("text", "").strip()}
     text = json.dumps(context, sort_keys=True, ensure_ascii=True)
     return {"stage": stage, "revision": board.revision, "digest": hashlib.sha256(text.encode()).hexdigest(),
-            "packet": context, "text": text}
+            "packet": context, "text": text,
+            "reading_guide": {
+                "included_elements": len(records), "omitted_elements": context["omitted_elements"],
+                "freehand_elements": sum(e["type"] == "freedraw" for e in elements),
+                "unbound_connectors": sum(e["type"] in {"arrow", "line"} and
+                                          any((e.get(k) or {}).get("elementId") not in ids
+                                              for k in ("startBinding", "endBinding")) for e in elements),
+                "unlabeled_shapes": sum(e["type"] in {"rectangle", "diamond", "ellipse", "frame"} and
+                                        not e.get("text") and e["id"] not in labeled
+                                        for e in elements),
+            }}
 
 
 def validate_output(value, review):

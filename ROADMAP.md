@@ -48,3 +48,7 @@ AD0–AD2 declared ERD/data-contract views passed desktop/mobile and theme QA af
 ### Latest delivery: Linear and observed sequences
 
 Observed stack/trace sequences are reviewed; library filtering now keeps the final captured frame. First Linear vertical slice is implemented and fixture-tested: settings/check, teams, reviewed create and durable receipts, reachable from recommendations and whiteboard plans. I0/T0/T1 remain partial until shared transport/registry, fuller targeting/source links and live account validation are complete. Next: validate a user-configured Linear account, expose receipts on source items, then Sentry project/issue browsing. No live ticket was created during development.
+
+### 2026-09-16 delivery checkpoint
+
+Direct drawing on the whiteboard starting screen, source-linked Linear receipts/duplicate acknowledgement, and Sentry project/issue browsing are implemented and fixture/browser tested. D1b still needs a live authorized account check; release-to-commit checks, fuller Linear targeting and the generalized provider registry remain open. Portable local development runs without the hosted Worker runtime; deployment builds still include it.

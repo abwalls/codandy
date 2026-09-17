@@ -37,3 +37,7 @@ export async function debuggingRequest(path: string, options?: RequestInit) {
   }
   return response.status === 204 ? null : response.json();
 }
+
+const listingMetadata = { next_cursor: z.string().regex(/^[0-9]{1,20}:[0-9]{1,20}:[01]$/).nullable(), notes: z.array(z.string()) };
+export const sentryProjectsSchema = z.object({ ...listingMetadata, items: z.array(z.object({ id: z.string().regex(/^[0-9]{1,32}$/), name: z.string(), slug: z.string() })).max(50) });
+export const sentryIssuesSchema = z.object({ ...listingMetadata, items: z.array(z.object({ id: z.string().regex(/^[0-9]{1,32}$/), title: z.string(), culprit: z.string(), status: z.string() })).max(50) });

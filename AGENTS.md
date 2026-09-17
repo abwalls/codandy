@@ -85,3 +85,7 @@ Use `scripts\setup-windows.ps1` for first-time setup and `scripts\start-windows.
 ## Integration checkpoint (2026-09-15)
 
 Local Linear ticket creation is implemented in app/integrations, components/create-ticket.tsx and backend/app/integrations. Credentials remain in backend settings; /api/integrations uses local_only and is never forwarded by the hosted proxy. Tests must also isolate integration_root and linear_api_key. SQLite submission records live in ignored .integrations; preserve them because they prevent duplicate sends. Uncertain submissions must never be retried automatically. Live account verification, generalized registry/shared transport and source-item receipt links remain open. Observed sequence review fixed the collapsed-library final-frame attribution; 46 frontend/API contracts pass. Validation details and next steps are in ASTRA-LINEAR-REVIEW-2026-09-15.md and progress.md.
+
+## 2026-09-16 current checkpoint
+
+Direct whiteboard drawing is available before first save. JSON import lives under Open an exported board. Linked ticket history and acknowledgement of additional submissions are implemented; Source IDs allow 2,048 characters to include repository/revision context while the ledger stores only a digest. Sentry project/issue browsing is implemented but not live-account verified. Portable development uses the normal Vinext runtime; keep Cloudflare enabled for builds and managed Linux. Validation: 307 backend tests and 47 frontend/API contracts, plus browser QA. See progress.md for the publication and next task checkpoint.

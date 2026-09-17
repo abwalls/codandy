@@ -145,3 +145,42 @@ def test_stale_artifact_rejected_and_old_plan_export_marked():
     plan.tasks[0].depends_on = ["one"]
     with pytest.raises(ValueError):
         validate_output(plan, packet(board, "interpret"))
+
+
+def test_reading_guide_and_group_context_exclude_deleted_labels():
+    drawing = scene()
+    drawing.elements += [{"id": "pen", "type": "freedraw", "groupIds": ["proposal"]},
+                         {"id": "unlabeled", "type": "ellipse", "frameId": "missing"},
+                         {"id": "deleted", "type": "text", "text": "Ignored", "containerId": "unlabeled", "isDeleted": True}]
+    board = BoardStore(None).create(Draft(scene=drawing))
+    review = packet(board, "interpret")
+    assert review["reading_guide"] == {"included_elements": 5, "omitted_elements": 0,
+                                       "freehand_elements": 1, "unbound_connectors": 1, "unlabeled_shapes": 1}
+    records = {v["id"]: v for v in review["packet"]["elements"]}
+    assert records["pen"]["groups"] == ["proposal"]
+    assert records["unlabeled"]["frame"] is None
+    assert "deleted" not in records
+
+
+def test_plan_outputs_include_structured_tasks_and_preserve_stale_state():
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.state.boards = BoardStore(None)
+    board = app.state.boards.create(Draft())
+    plan = Plan(title="Feature", objective="Build it", in_scope=[], out_of_scope=[], decisions=[],
+                tasks=[{"id": "one", "title": "Implement", "description": "Do work", "depends_on": [],
+                        "acceptance_criteria": ["Works"], "verification": ["Check behavior"], "proposed_paths": []}],
+                risks=[], open_questions=[])
+    artifact = Artifact(revision=1, stage="plan", digest="x", model="test", plan=plan)
+    app.state.boards.add_artifact(board.id, artifact)
+    with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 1234)) as client:
+        path = f"/api/boards/{board.id}/outputs/{artifact.id}"
+        assert client.get(path).status_code == 403
+        value = client.get(path, headers={"X-Codandy-Local": "1"}).json()
+        assert value["structured_plan"] == plan.model_dump()
+        assert value["artifact_id"] == str(artifact.id)
+        assert value["revision"] == 1 and not value["stale"]
+        app.state.boards.update(board.id, Edit(revision=1, notes="Change goal"))
+        stale = client.get(path, headers={"X-Codandy-Local": "1"}).json()
+        assert stale["stale"] and "STALE" in stale["plan"]
+        assert stale["structured_plan"] == value["structured_plan"]

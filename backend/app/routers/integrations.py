@@ -6,7 +6,7 @@ from starlette.concurrency import run_in_threadpool
 from app.debugging.models import DebuggingLimits
 from app.debugging.payload import load_json
 from app.integrations import linear
-from app.integrations.tickets import Draft, Submission, TicketConflict, review
+from app.integrations.tickets import Draft, Source, Submission, TicketConflict, review
 from app.routers.debugging import local_only
 from app.settings import settings
 
@@ -61,7 +61,10 @@ async def body(request, schema):
 
 @router.post("/tickets/review")
 async def prepare(request: Request):
-    return operation(review, settings, await body(request, Draft))
+    draft = await body(request, Draft)
+    packet = operation(review, settings, draft)
+    packet["previous_submissions"] = operation(request.app.state.tickets.count_source, draft)
+    return packet
 
 
 @router.post("/tickets")
@@ -73,3 +76,9 @@ async def create(request: Request):
 @router.get("/tickets")
 def history(request: Request):
     return operation(request.app.state.tickets.history)
+
+
+@router.post("/tickets/links")
+async def source_links(request: Request):
+    source = await body(request, Source)
+    return operation(request.app.state.tickets.history, source)

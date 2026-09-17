@@ -139,3 +139,13 @@ Extraction is static and bounded. It has its own share of the analysis time budg
 ### 2026-09-15 ticketing delivery update
 
 The first local Linear creation workflow is implemented from Recommended changes, whiteboard plan exports and Integrations. Exact scrubbed payload review and explicit confirmation precede each external write. A durable submission ledger prevents automatic duplicate retries, including after restart. Offline fixtures and browser mocks validate the workflow; live account validation remains open. See docs/INTEGRATIONS-PLAN.md for unfinished shared-provider, pagination and source-link criteria. Observed stack/trace sequence views are reviewed, with a fix preserving the true final captured frame when library frames are collapsed.
+
+### 2026-09-16 delivered slices
+
+Whiteboard starts with a real unsaved drawing canvas; saving creates the local board and opens the existing AI planning workflow. Import is secondary. Source-linked ticket receipts are available on saved boards and recommendation cards; a different ticket draft for the same source requires explicit acknowledgement. Recommendation linkage is scoped to repository/revision.
+
+Sentry project and issue browsing is implemented with at most 50 results per click, safe cursor pagination, scrubbed narrow fields, and explicit issue selection before event retrieval. Projects need org:read and issue/event reads need event:read. Live account testing and release-commit verification remain open. No status changes or other Sentry writes are added.
+
+### 2026-09-16 — Whiteboard planning delivery
+
+Structured task cards now expose dependencies, acceptance criteria, verification and proposed paths. Each task can be prepared as an individually reviewed Linear ticket, with receipt identity scoped to board/plan/task; no automatic issue dependency links are claimed. Coding-assistant handoffs and the exact reviewed drawing context are downloadable. A reading guide discloses freehand, unlabeled, dangling and omitted elements; group context is retained as user design. Visual image interpretation, evidence cards, live provider validation and automatic implementation remain open.
