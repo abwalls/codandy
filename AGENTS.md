@@ -89,3 +89,7 @@ Local Linear ticket creation is implemented in app/integrations, components/crea
 ## 2026-09-16 current checkpoint
 
 Direct whiteboard drawing is available before first save. JSON import lives under Open an exported board. Linked ticket history and acknowledgement of additional submissions are implemented; Source IDs allow 2,048 characters to include repository/revision context while the ledger stores only a digest. Sentry project/issue browsing is implemented but not live-account verified. Portable development uses the normal Vinext runtime; keep Cloudflare enabled for builds and managed Linux. Validation: 307 backend tests and 47 frontend/API contracts, plus browser QA. See progress.md for the publication and next task checkpoint.
+
+## Visual whiteboard checkpoint (2026-09-17)
+
+Reviewed PNG interpretation and inline clarifications are implemented and synthetic-live tested. See ASTRA-VISUAL-WHITEBOARD-REVIEW-2026-09-17.md. Preserve local-only routes, image+text/revision digest binding, separate image consent, visual_inference citations, bounded PNG validation and temporary image cleanup. 322 backend tests and 49 contracts pass. Image bodies must not enter persisted board artifacts.

@@ -52,3 +52,11 @@ Observed stack/trace sequences are reviewed; library filtering now keeps the fin
 ### 2026-09-16 delivery checkpoint
 
 Direct drawing on the whiteboard starting screen, source-linked Linear receipts/duplicate acknowledgement, and Sentry project/issue browsing are implemented and fixture/browser tested. D1b still needs a live authorized account check; release-to-commit checks, fuller Linear targeting and the generalized provider registry remain open. Portable local development runs without the hosted Worker runtime; deployment builds still include it.
+
+### 2026-09-17 — Reviewed visual whiteboard interpretation delivered
+
+The local whiteboard can now render a sanitized drawing preview and submit the exact reviewed PNG plus text context to the connected Codex model. Image consent is separate, review digests bind image/revision/context, and changes invalidate approval. Visual findings have explicit visual_inference provenance and require supplied element citations. The assistant asks about ambiguous handwriting, shapes, relationships and requirements. Inline answers become saved user requirements; reinterpret the updated revision before generating a plan.
+
+PNG input is bounded to 2 MiB, 2,048 pixels per side and supported RGB/RGBA formats, with CRC/expanded-byte validation and ancillary metadata stripping. Temporary local image files are removed after completion or failure; image bodies are not stored in board artifacts. Typed text is scrubbed before rendering; handwriting still requires user inspection. Tools remain disabled and there is no remote URL or client-supplied file path input.
+
+Validation: 322 backend tests, 49 frontend/API contracts, Ruff, TypeScript, changed-file lint and production build pass. Mocked and live synthetic Edge workflows pass image consent, interpretation questions, inline answers and mobile layout. Two small live synthetic requests used the connected default GPT-6-Astra/low model; no personal board or provider ticket was shared. The visible freehand test asked whether the unknown shape meant an arrow/component, its endpoints and the API's responsibility. Other account/model combinations remain unverified. Source/case evidence cards, plan comparison and external-image imports remain future work.

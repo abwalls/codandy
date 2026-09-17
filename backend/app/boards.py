@@ -80,7 +80,7 @@ class Edit(Draft):
 class Finding(Contract):
     text: str = Field(min_length=1, max_length=2000)
     element_ids: list[str] = Field(max_length=40)
-    basis: Literal["drawn", "answered", "assumed"]
+    basis: Literal["drawn", "answered", "assumed", "visual_inference"]
 
 
 class Interpretation(Contract):
@@ -118,6 +118,7 @@ class Artifact(Contract):
     digest: str
     model: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    visual_input: bool = False
     interpretation: Interpretation | None = None
     plan: Plan | None = None
 
@@ -282,7 +283,10 @@ def validate_output(value, review):
     for finding in findings:
         if any(identifier not in allowed for identifier in finding.element_ids):
             raise ValueError("AI cited an element outside the reviewed packet")
-        if finding.basis == "drawn" and not finding.element_ids:
+        if finding.basis == "visual_inference" and not (review["packet"].get("visual_input") or
+                any(f.get("basis") == "visual_inference" for f in review["packet"].get("interpretation", {}).get("findings", []))):
+            raise ValueError("Visual claims require reviewed image evidence")
+        if finding.basis in {"drawn", "visual_inference"} and not finding.element_ids:
             raise ValueError("Drawn findings require an element citation")
     if isinstance(value, Plan):
         seen = set()

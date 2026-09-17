@@ -771,3 +771,13 @@ test("whiteboard structured plan outputs match Python and reject missing verific
   value.structured_plan.tasks[0].verification = [];
   assert.equal(planOutputsSchema.safeParse(value).success, false);
 });
+
+test("visual board findings round-trip with provenance and reject remote preview URLs", async () => {
+  const { boardSchema, reviewSchema } = await import("../lib/board-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.boards import BoardStore, Draft, Artifact, Interpretation, packet; b=BoardStore(None).create(Draft()); b.artifacts=[Artifact(revision=1, stage='interpret', digest='x', model='test', visual_input=True, interpretation=Interpretation(summary='Possible queue', findings=[dict(text='Queue?',element_ids=['stroke'],basis='visual_inference')], questions=['What is this shape?'], assumptions=[]))]; print(json.dumps(dict(board=b.model_dump(mode='json'),review=packet(b,'interpret'))))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout);
+  assert.equal(boardSchema.parse(value.board).artifacts[0].visual_input, true);
+  assert.equal(boardSchema.parse(value.board).artifacts[0].interpretation.findings[0].basis, "visual_inference");
+  assert.equal(reviewSchema.safeParse({ ...value.review, image: "https://example.com/secret.png" }).success, false);
+});
