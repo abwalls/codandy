@@ -781,3 +781,27 @@ test("visual board findings round-trip with provenance and reject remote preview
   assert.equal(boardSchema.parse(value.board).artifacts[0].interpretation.findings[0].basis, "visual_inference");
   assert.equal(reviewSchema.safeParse({ ...value.review, image: "https://example.com/secret.png" }).success, false);
 });
+
+test("whiteboard comparison distinguishes task edits, replacements and ordering", async () => {
+  const { compareBoardPlans } = await import("../lib/board-plan-comparison.ts");
+  const task = id => ({ id, title: id, description: "Task", depends_on: [], acceptance_criteria: ["works"], verification: ["test"], proposed_paths: [] });
+  const before = { title: "Plan", objective: "Goal", in_scope: [], out_of_scope: [], decisions: [], risks: [], open_questions: [], tasks: [task("a"), task("b"), task("removed")] };
+  const after = { ...before, objective: "New goal", tasks: [task("b"), { ...task("a"), verification: ["different test"] }, task("added")] };
+  const result = compareBoardPlans(before, after);
+  assert.deepEqual(result.added.map(t => t.id), ["added"]);
+  assert.deepEqual(result.removed.map(t => t.id), ["removed"]);
+  assert.deepEqual(result.changed.map(t => t.fields), [["verification"]]);
+  assert.deepEqual(result.sections, ["objective"]);
+  assert.equal(result.reordered, true); assert.equal(result.unchanged, 1);
+  assert.deepEqual(compareBoardPlans(before, structuredClone(before)).changed, []);
+  assert.throws(() => compareBoardPlans(before, { ...before, tasks: [task("a"), task("a")] }), /duplicate/);
+});
+
+test("captured whiteboard evidence and citations match Python contracts", async () => {
+  const { boardSchema, reviewSchema } = await import("../lib/board-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.boards import BoardStore,Draft,EvidenceCard,Artifact,Interpretation,packet; s=BoardStore(None); b=s.create(Draft()); c=EvidenceCard(kind='case',source_id='case',source_revision='captured',title='Failure',text='Observed stack',basis='observed'); b=s.evidence(b.id,1,c); b=s.add_artifact(b.id,Artifact(revision=2,stage='interpret',digest='x',model='test',interpretation=Interpretation(summary='Failure',findings=[dict(text='Failure',element_ids=[],evidence_ids=[str(c.id)],basis='captured_evidence')],questions=[],assumptions=[]))); print(json.dumps(dict(board=b.model_dump(mode='json'),review=packet(b,'interpret'))))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout); const board = boardSchema.parse(value.board);
+  assert.equal(board.artifacts[0].interpretation.findings[0].evidence_ids[0], board.evidence_cards[0].id);
+  assert.equal(reviewSchema.parse(value.review).revision, 2);
+});

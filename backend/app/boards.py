@@ -77,10 +77,27 @@ class Edit(Draft):
     revision: int = Field(ge=1)
 
 
+class EvidenceCard(Contract):
+    id: UUID = Field(default_factory=uuid4)
+    kind: Literal["source", "case"]
+    source_id: str = Field(max_length=500)
+    source_revision: str = Field(max_length=200)
+    snapshot_id: UUID | None = None
+    captured_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    title: str = Field(max_length=200)
+    text: str = Field(max_length=2500)
+    basis: str = Field(max_length=200)
+
+
 class Finding(Contract):
+    # Stored older artifacts may omit evidence_ids, but strict AI output schemas
+    # require every property to be present (use [] for uncited evidence).
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False,
+                              json_schema_extra=lambda schema: schema.update(required=list(schema["properties"])))
     text: str = Field(min_length=1, max_length=2000)
     element_ids: list[str] = Field(max_length=40)
-    basis: Literal["drawn", "answered", "assumed", "visual_inference"]
+    evidence_ids: list[str] = Field(default_factory=list, max_length=20)
+    basis: Literal["drawn", "answered", "assumed", "visual_inference", "captured_evidence"]
 
 
 class Interpretation(Contract):
@@ -119,6 +136,7 @@ class Artifact(Contract):
     model: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     visual_input: bool = False
+    evidence_cards: list[EvidenceCard] = Field(default_factory=list, max_length=10)
     interpretation: Interpretation | None = None
     plan: Plan | None = None
 
@@ -130,6 +148,7 @@ class Board(Draft):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     artifacts: list[Artifact] = Field(default_factory=list, max_length=20)
+    evidence_cards: list[EvidenceCard] = Field(default_factory=list, max_length=10)
 
 
 class Conflict(ValueError):
@@ -207,6 +226,26 @@ class BoardStore:
             board.artifacts = [*board.artifacts[-19:], artifact]
             return self.persist(board)
 
+    def evidence(self, identifier, revision, card=None, remove=None):
+        with self.lock:
+            board = self.get(identifier)
+            if board.revision != revision:
+                raise Conflict("Board changed. Reopen it before changing evidence.")
+            if remove is not None:
+                if not any(c.id == remove for c in board.evidence_cards):
+                    raise KeyError("Evidence card unavailable")
+                board.evidence_cards = [c for c in board.evidence_cards if c.id != remove]
+            else:
+                if any((c.kind, c.source_id, c.source_revision, c.snapshot_id) ==
+                       (card.kind, card.source_id, card.source_revision, card.snapshot_id) for c in board.evidence_cards):
+                    return board
+                if len(board.evidence_cards) >= 10:
+                    raise ValueError("A board can retain at most 10 evidence cards")
+                board.evidence_cards.append(card)
+            board.revision += 1
+            board.updated_at = datetime.now(UTC)
+            return self.persist(board)
+
     def delete(self, identifier, revision):
         with self.lock:
             board = self.get(identifier)
@@ -236,6 +275,7 @@ def packet(board, stage, atlas=None):
     context = {"schema": "board-digest-0.1", "board_id": str(board.id), "revision": board.revision,
                "title": redactor.text(board.title, "title"), "user_answers_and_corrections": redactor.text(board.notes, "notes"),
                "elements": records, "omitted_elements": 0,
+               "evidence_cards": [c.model_dump(mode="json") for c in board.evidence_cards], "omitted_evidence_cards": 0,
                "limitations": ["Drawing expresses user intent, not verified architecture.",
                                "Unlabeled/freehand drawings are not interpreted visually.",
                                "Unbound arrows have unknown endpoints; layout does not prove a connection."],
@@ -252,6 +292,9 @@ def packet(board, stage, atlas=None):
     while len(json.dumps(context).encode()) > 40000 and records:
         records.pop()
         context["omitted_elements"] += 1
+    while len(json.dumps(context).encode()) > 40000 and context["evidence_cards"]:
+        context["evidence_cards"].pop()
+        context["omitted_evidence_cards"] += 1
     if len(json.dumps(context).encode()) > 40000:
         raise ValueError("Board notes and interpretation exceed the review budget; shorten them")
     retained = {e["id"] for e in records}
@@ -280,7 +323,12 @@ def packet(board, stage, atlas=None):
 def validate_output(value, review):
     allowed = {e["id"] for e in review["packet"]["elements"]}
     findings = value.findings if isinstance(value, Interpretation) else value.decisions
+    evidence = {c["id"] for c in review["packet"].get("evidence_cards", [])}
     for finding in findings:
+        if any(identifier not in evidence for identifier in finding.evidence_ids):
+            raise ValueError("AI cited evidence outside the reviewed packet")
+        if finding.basis == "captured_evidence" and not finding.evidence_ids:
+            raise ValueError("Captured evidence findings require evidence citations")
         if any(identifier not in allowed for identifier in finding.element_ids):
             raise ValueError("AI cited an element outside the reviewed packet")
         if finding.basis == "visual_inference" and not (review["packet"].get("visual_input") or
@@ -305,7 +353,13 @@ def render_plan(board, artifact, ticket=False):
         lines += ["STALE: the board has changed since this plan was generated.", ""]
     for heading, values in (("In scope", p.in_scope), ("Out of scope", p.out_of_scope)):
         lines += [f"## {heading}", "", *[f"- {v}" for v in values], ""]
-    lines += ["## Decisions", "", *[f"- [{d.basis}] {d.text} (elements: {', '.join(d.element_ids) or 'none'})" for d in p.decisions], ""]
+    lines += ["## Decisions", "", *[f"- [{d.basis}] {d.text} (elements: {', '.join(d.element_ids) or 'none'}; evidence: {', '.join(d.evidence_ids) or 'none'})" for d in p.decisions], ""]
+    if artifact.evidence_cards:
+        lines += ["## Captured evidence", "", "These retained summaries are dated copies, not live source or verified runtime mappings.", ""]
+        for card in artifact.evidence_cards:
+            lines += [f"### {card.title}", f"Evidence ID: {card.id} · {card.basis}",
+                      f"Captured: {card.captured_at.isoformat()} · source: {card.source_id} · revision: {card.source_revision}",
+                      f"Snapshot: {card.snapshot_id or 'none'}", "", card.text, ""]
     for task in p.tasks:
         lines += [f"## {'[ ] ' if ticket else ''}{task.id}: {task.title}", "", task.description,
                   f"Depends on: {', '.join(task.depends_on) or 'none'}", "",
