@@ -23,6 +23,8 @@ class Draft(Contract):
     title: str = Field(min_length=1, max_length=250)
     description: str = Field(max_length=16000)
     team_id: UUID
+    project_id: UUID | None = None
+    priority: int | None = Field(default=None, ge=0, le=4, strict=True)
     source_kind: Literal["manual", "board", "recommendation", "case"] = "manual"
     source_id: str = Field(default="", max_length=2048)
 
@@ -51,6 +53,10 @@ def review(config, draft):
         raise ValueError("Enter a ticket title")
     payload = {"teamId": str(draft.team_id), "title": title,
                "description": redactor.text(draft.description.replace(credential, "[redacted:credential]"), "description")}
+    if draft.project_id is not None:
+        payload["projectId"] = str(draft.project_id)
+    if draft.priority is not None:
+        payload["priority"] = draft.priority
     # Changing accounts, source provenance, target or content invalidates the review.
     account = hashlib.sha256(linear.key(config).encode()).hexdigest()
     envelope = {"provider": "linear", "payload": payload, "account": account,

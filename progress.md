@@ -591,3 +591,28 @@ Validation: 322 backend tests, 49 frontend/API contracts, Ruff, TypeScript, chan
 - Saved plan comparison shows added/removed/changed tasks, changed sections and shared-task reordering. IDs match tasks; renamed IDs are not guessed as equivalent. Comparison is read-only and does not imply code changes or completed work.
 - Validation: full backend suite completed with 327 tests; 51 frontend/API contracts, types, lint and production build passed. Live synthetic evidence pin/review/citation/removal/retention and mocked plan-comparison browser checks passed at desktop/mobile sizes with no page errors. A browser selector mismatch was corrected without changing product behavior. Synthetic boards/cases were deleted by returned IDs. Source-node pinning is backend-tested; its selector was not separately browser-tested.
 - Review handoff: ASTRA-EVIDENCE-PLANS-REVIEW-2026-09-17.md. Publishing this checkpoint next, then continuing bounded Linear targeting improvements. No live ticket/provider write was made.
+
+
+### 2026-09-17 — Evidence publication and Linear pagination checkpoint
+
+- Evidence cards and plan comparison source cf9c921300ea6c8574b0d6115a25aca21b77b797 published successfully as Sites v10 at https://codandy.abwalls.chatgpt.site (owner-private access unchanged). Local Python/AI capabilities still require localhost.
+- Linear team selection now supports explicit 50-team pages with opaque, bounded GraphQL cursors. Invalid/repeated cursors and malformed provider pagination fail closed. Names are scrubbed, including the configured credential. Page changes clear target/review; failed loads preserve current draft/selection. No automatic page traversal or issue mutation.
+- Validation: 30 ticket backend tests, Ruff, TypeScript and changed-component lint passed. Mocked Edge QA passed encoded cursors, next/first page, review invalidation, error recovery and mobile width. Initial QA needed hydration delay and corrected accessible selectors; no application error was observed. No real Linear provider call or ticket write.
+- Pagination is currently local and uncommitted; continuing with optional team-scoped project targeting before the next published checkpoint. See ASTRA-EVIDENCE-PLANS-REVIEW-2026-09-17.md for the preceding whiteboard review.
+
+
+### 2026-09-17 — Linear project targeting validated locally
+
+- Optional project selection uses explicit, team-scoped pages of up to 50 unarchived projects. Team changes clear projects; project/page changes clear the ticket review. No project remains supported. Exact reviewed payloads include projectId only when selected, and existing digest/idempotency checks bind it.
+- Preserved Claude's concurrent Unicode team-name schema correction, reusing its code-point-aware contract for project pages. Shared provider page validation rejects invalid IDs, duplicate IDs, malformed cursors and inconsistent pagination. Provider permissions remain enforced by Linear at creation; local review is not a guarantee that a project is still accessible.
+- 33 ticket backend tests, Ruff and ticket-editor lint pass. Mocked Edge project QA passes scoped requests, cursor encoding, reviewed project ID, no-project behavior, target/review reset and mobile width, with no real provider calls/writes. The combined contract suite passes 56 tests.
+- Combined TypeScript currently fails in concurrently edited components/live-report.tsx: onShowSymbol is not accepted by its target component. Left unrelated Symbols work untouched pending coordination. Production build/publication of these new Linear changes is not complete; owner-private Sites v10 remains the last published checkpoint.
+- Found CLAUDE-CHANGES-2026-09-17.md and preserved its new local-folder/history/change-review/symbol work. Asked whether Claude is still editing before overlapping that work. Review handoff for this slice: ASTRA-LINEAR-TARGETING-REVIEW-2026-09-17.md.
+
+
+### 2026-09-17 — Reviewed Linear priorities and coordination checkpoint
+
+- Optional priority now travels in the exact reviewed payload and digest. Default omits it; explicit zero preserves No priority. Changing priority clears consent; server checks reject stale digest and invalid value types/ranges.
+- 39 focused ticket tests, Ruff, changed-file ESLint and project/priority Edge QA pass. Combined backend was 376 passed, 1 skipped before the six priority cases. Combined contracts were 57 passed before the final priority assertions; rerun next.
+- TypeScript still reports the shared live-report.tsx / ChangeReview onShowSymbol mismatch. This slice is uncommitted/unpublished and the current backend has not been restarted. Preserve Claude's parallel changes; pending coordination question asks whether Claude is still actively editing. Sites v10 remains successfully deployed.
+- Handoff updated: ASTRA-LINEAR-TARGETING-REVIEW-2026-09-17.md. It includes a read-only ancestor-link race concern in local_folders.copy_file for Claude to assess; no unrelated source changes were applied. Next: finish coordinated Symbols prop wiring, rerun types/build, restart local backend, then publish the reviewed combined checkpoint. Live Linear account verification remains outstanding.

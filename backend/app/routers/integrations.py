@@ -1,6 +1,7 @@
 import sqlite3
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.debugging.models import DebuggingLimits
@@ -41,8 +42,13 @@ def test_connection():
 
 
 @router.get("/linear/teams")
-def teams():
-    return operation(linear.teams, settings)
+def teams(after: str | None = Query(default=None, min_length=1, max_length=1024)):
+    return operation(linear.teams, settings, after)
+
+
+@router.get("/linear/projects")
+def projects(team_id: UUID, after: str | None = Query(default=None, min_length=1, max_length=1024)):
+    return operation(linear.projects, settings, team_id, after)
 
 
 async def body(request, schema):

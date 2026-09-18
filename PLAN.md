@@ -165,3 +165,8 @@ Validation: 322 backend tests, 49 frontend/API contracts, Ruff, TypeScript, chan
 - Saved plan comparison shows added/removed/changed tasks, changed sections and shared-task reordering. IDs match tasks; renamed IDs are not guessed as equivalent. Comparison is read-only and does not imply code changes or completed work.
 - Validation: full backend suite completed with 327 tests; 51 frontend/API contracts, types, lint and production build passed. Live synthetic evidence pin/review/citation/removal/retention and mocked plan-comparison browser checks passed at desktop/mobile sizes with no page errors. A browser selector mismatch was corrected without changing product behavior. Synthetic boards/cases were deleted by returned IDs. Source-node pinning is backend-tested; its selector was not separately browser-tested.
 - Review handoff: ASTRA-EVIDENCE-PLANS-REVIEW-2026-09-17.md. Publishing this checkpoint next, then continuing bounded Linear targeting improvements. No live ticket/provider write was made.
+
+
+### 2026-09-17 — Linear target selection
+
+Explicit bounded team pagination, team-scoped project pagination and optional priority are implemented. Exact payload review binds team, project and priority; target changes invalidate consent. Provider writes remain explicitly confirmed with durable at-most-one submission. Live account verification, labels, assignee and workflow-state selection remain open. See ASTRA-LINEAR-TARGETING-REVIEW-2026-09-17.md.

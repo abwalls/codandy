@@ -144,7 +144,7 @@ def test_provider_failures_do_not_echo_response(monkeypatch, payload):
 
 
 def test_linear_reads_and_create_validate_provider_contracts(monkeypatch):
-    transport(monkeypatch, json.dumps({"data": {"teams": {"nodes": [{"id": TEAM, "name": "Test"}], "pageInfo": {"hasNextPage": True}}}}).encode())
+    transport(monkeypatch, json.dumps({"data": {"teams": {"nodes": [{"id": TEAM, "name": "Test"}], "pageInfo": {"hasNextPage": True, "endCursor": "next-page"}}}}).encode())
     assert linear.teams(config())["has_more"] is True
     transport(monkeypatch, json.dumps({"data": {"issueCreate": {"success": True, "issue": {"id": ISSUE, "identifier": "DEMO-1"}}}}).encode())
     assert linear.create_issue(config(), {}) == receipt()
@@ -222,3 +222,122 @@ def test_review_reports_previous_submissions_and_local_links(monkeypatch):
         links = client.post("/api/integrations/tickets/links", json=source, headers=HEADERS)
         assert links.json()["items"][0]["receipt"]["external_key"] == "DEMO-1"
         assert "board-private" not in links.text
+
+
+def test_team_pages_use_variables_and_scrub_names(monkeypatch):
+    calls = []
+    def response(config, document, variables):
+        calls.append((document, variables))
+        return {"teams": {"nodes": [{"id": TEAM, "name": "lin_api_test_credential"}],
+                          "pageInfo": {"hasNextPage": True, "endCursor": "next+/="}}}
+    monkeypatch.setattr(linear, "query", response)
+    result = linear.teams(config(), 'opaque"cursor')
+    assert calls[0][1] == {"after": 'opaque"cursor'}
+    assert 'opaque"cursor' not in calls[0][0]
+    assert result["next_cursor"] == "next+/="
+    assert "lin_api" not in result["items"][0]["name"]
+
+
+@pytest.mark.parametrize("cursor", ["", "x" * 1025, "line\nbreak", "has space", 123])
+def test_invalid_team_cursor_never_calls_provider(monkeypatch, cursor):
+    monkeypatch.setattr(linear, "query", lambda *a: pytest.fail("must not call provider"))
+    with pytest.raises(ValueError):
+        linear.teams(config(), cursor)
+
+
+@pytest.mark.parametrize("info", [
+    {"hasNextPage": "false"}, {"hasNextPage": True},
+    {"hasNextPage": True, "endCursor": "current"},
+    {"hasNextPage": True, "endCursor": "x" * 1025},
+])
+def test_invalid_team_pagination_fails_closed(monkeypatch, info):
+    monkeypatch.setattr(linear, "query", lambda *a: {"teams": {
+        "nodes": [{"id": TEAM, "name": "Team"}], "pageInfo": info}})
+    with pytest.raises(linear.ProviderError):
+        linear.teams(config(), "current")
+
+
+def test_team_page_api_is_local_and_bounded(monkeypatch):
+    calls = []
+    monkeypatch.setattr(linear, "teams", lambda cfg, after: calls.append(after) or {
+        "items": [], "has_more": False, "next_cursor": None})
+    with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 123)) as client:
+        assert client.get("/api/integrations/linear/teams").status_code == 403
+        assert client.get("/api/integrations/linear/teams", headers=HEADERS,
+                          params={"after": "x" * 1025}).status_code == 422
+        page = client.get("/api/integrations/linear/teams", headers=HEADERS,
+                          params={"after": "next+/="})
+        assert page.status_code == 200
+        assert page.json()["next_cursor"] is None
+        assert calls == ["next+/="]
+
+
+def test_project_pages_are_team_scoped_and_bounded(monkeypatch):
+    calls = []
+    def response(cfg, document, variables):
+        calls.append((document, variables))
+        return {"team": {"projects": {"nodes": [{"id": ISSUE, "name": "Project"}],
+                                      "pageInfo": {"hasNextPage": False}}}}
+    monkeypatch.setattr(linear, "query", response)
+    result = linear.projects(config(), TEAM, "cursor")
+    assert result == {"items": [{"id": ISSUE, "name": "Project"}], "has_more": False, "next_cursor": None}
+    assert calls[0][1] == {"team": TEAM, "after": "cursor"}
+    assert "includeArchived: false" in calls[0][0]
+    with pytest.raises(ValueError):
+        linear.projects(config(), "invalid-team")
+    assert len(calls) == 1
+    monkeypatch.setattr(linear, "query", lambda *a: {"team": None})
+    with pytest.raises(linear.ProviderError):
+        linear.projects(config(), TEAM)
+
+
+def test_project_target_is_reviewed_and_cannot_change_on_submission(tmp_path, monkeypatch):
+    cfg = config()
+    plain = review(cfg, draft())
+    assert "projectId" not in plain["payload"]
+    value = Draft(**{**draft().model_dump(), "project_id": ISSUE})
+    packet = review(cfg, value)
+    assert packet["payload"]["projectId"] == ISSUE
+    assert packet["digest"] != plain["digest"]
+    submitted = submission(cfg, value)
+    calls = []
+    monkeypatch.setattr(linear, "create_issue", lambda cfg, payload: calls.append(payload) or receipt())
+    store = TicketStore(tmp_path)
+    with pytest.raises(TicketConflict):
+        store.submit(cfg, submitted.model_copy(update={"project_id": None}))
+    assert not calls
+    store.submit(cfg, submitted)
+    assert calls == [packet["payload"]]
+    assert store.submit(cfg, submitted)["external_id"] == ISSUE
+    assert len(calls) == 1
+
+
+def test_project_api_requires_valid_team_and_local_guard(monkeypatch):
+    calls = []
+    monkeypatch.setattr(linear, "projects", lambda cfg, team, after: calls.append((str(team), after)) or {
+        "items": [], "has_more": False, "next_cursor": None})
+    with TestClient(app, base_url="http://localhost", client=("127.0.0.1", 123)) as client:
+        path = "/api/integrations/linear/projects"
+        assert client.get(path, params={"team_id": TEAM}).status_code == 403
+        assert client.get(path, headers=HEADERS, params={"team_id": "bad"}).status_code == 422
+        assert client.get(path, headers=HEADERS, params={"team_id": TEAM, "after": "next+/="}).status_code == 200
+        assert calls == [(TEAM, "next+/=")]
+
+
+@pytest.mark.parametrize("priority", [-1, 5, True, 1.5, "2"])
+def test_invalid_ticket_priority_is_rejected(priority):
+    with pytest.raises(ValueError):
+        Draft(**{**draft().model_dump(), "priority": priority})
+
+
+def test_priority_changes_require_a_fresh_review(tmp_path, monkeypatch):
+    cfg = config()
+    assert "priority" not in review(cfg, draft())["payload"]
+    packets = [review(cfg, Draft(**{**draft().model_dump(), "priority": n})) for n in range(5)]
+    assert [p["payload"]["priority"] for p in packets] == list(range(5))
+    assert len({p["digest"] for p in packets}) == 5
+    value = Draft(**{**draft().model_dump(), "priority": 2})
+    submitted = submission(cfg, value)
+    monkeypatch.setattr(linear, "create_issue", lambda *args: pytest.fail("must not write"))
+    with pytest.raises(TicketConflict):
+        TicketStore(tmp_path).submit(cfg, submitted.model_copy(update={"priority": 1}))

@@ -746,6 +746,36 @@ test("Python Linear reviews match the frontend and bind the target", async () =>
   assert.equal(ticketReceiptSchema.safeParse({ schema_version:'ticket-link-0.1',provider:'linear',external_id:'22222222-2222-4222-8222-222222222222',external_key:'DEMO-1',url:'https://evil.example/issue/DEMO-1',digest:reviewed.digest }).success, false);
 });
 
+test("Linear project targets survive the Python review contract", async () => {
+  const { ticketReviewSchema } = await import("../lib/tickets-api.ts");
+  const result = spawnSync(python, ["-c", "import json; from app.settings import Settings; from app.integrations.tickets import Draft,review; print(json.dumps(review(Settings(_env_file=None,linear_api_key='test-key'), Draft(title='Review project',description='',team_id='11111111-1111-4111-8111-111111111111',project_id='22222222-2222-4222-8222-222222222222',priority=0))))"], { cwd: resolve("backend"), encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const raw = JSON.parse(result.stdout);
+  assert.equal(ticketReviewSchema.parse(raw).payload.projectId, "22222222-2222-4222-8222-222222222222");
+  assert.equal(ticketReviewSchema.parse(raw).payload.priority, 0);
+  assert.equal(ticketReviewSchema.safeParse({ ...raw, payload: { ...raw.payload, priority: 5 } }).success, false);
+  assert.equal(ticketReviewSchema.safeParse({ ...raw, payload: { ...raw.payload, projectId: "not-a-uuid" } }).success, false);
+});
+
+test("Linear team names use the backend's code-point limit, so an emoji near it keeps the page", async () => {
+  const { linearTeamsSchema } = await import("../lib/tickets-api.ts");
+  const result = spawnSync(python, ["-c", `
+import json
+from pydantic import SecretStr
+from app.integrations import linear
+from app.settings import Settings
+linear.query = lambda *args, **kwargs: {"teams": {"nodes": [{"id": "11111111-1111-4111-8111-111111111111", "name": "a" * 199 + "\\U0001F600" + "b" * 50}], "pageInfo": {"hasNextPage": False, "endCursor": None}}}
+print(json.dumps(linear.teams(Settings(linear_api_key=SecretStr("lin_api_testkey")))))
+`], { cwd: resolve("backend"), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  assert.equal(result.status, 0, result.stderr);
+  const page = JSON.parse(result.stdout);
+  // 200 code points after backend truncation, but 201 UTF-16 units: the old .max(200) rejected it.
+  assert.equal(page.items[0].name.length, 201);
+  assert.equal(linearTeamsSchema.parse(page).items.length, 1);
+  assert.equal(linearTeamsSchema.safeParse({ ...page, items: [{ ...page.items[0], name: page.items[0].name + "c" }] }).success, false);
+  assert.equal(linearTeamsSchema.safeParse({ ...page, has_more: true }).success, false);
+});
+
 test("Sentry listing contracts accept scrubbed Python output and reject URL cursors", async () => {
   const { sentryProjectsSchema, sentryIssuesSchema } = await import("../lib/debugging-api.ts");
   const result = spawnSync(python, ["-c", `

@@ -65,20 +65,58 @@ def test_connection(config):
         raise ProviderError("Linear did not confirm the connection")
 
 
-def teams(config):
-    result = query(config, "query { teams(first: 50) { nodes { id name } pageInfo { hasNextPage } } }")
+def validate_cursor(value):
+    if value is not None and (not isinstance(value, str) or not 1 <= len(value) <= 1024
+                              or any(ord(char) < 33 or ord(char) > 126 for char in value)):
+        raise ValueError("Invalid Linear page cursor")
+    return value
+
+
+def teams(config, after=None):
+    validate_cursor(after)
+    result = query(config, "query($after: String) { teams(first: 50, after: $after) { "
+                   "nodes { id name } pageInfo { hasNextPage endCursor } } }", {"after": after})
+    return named_page(config, result.get("teams"), after)
+
+
+def projects(config, team_id, after=None):
+    from uuid import UUID
+    team_id = str(UUID(str(team_id)))
+    validate_cursor(after)
+    result = query(config, "query($team: String!, $after: String) { team(id: $team) { "
+                   "projects(first: 50, after: $after, includeArchived: false) { "
+                   "nodes { id name } pageInfo { hasNextPage endCursor } } } }",
+                   {"team": team_id, "after": after})
+    team = result.get("team")
+    if not isinstance(team, dict):
+        raise ProviderError("Linear did not return the requested team")
+    return named_page(config, team.get("projects"), after)
+
+
+def named_page(config, connection, after):
     try:
         from uuid import UUID
-        connection = result["teams"]
         rows = connection["nodes"]
         if not isinstance(rows, list) or len(rows) > 50:
             raise ValueError()
         redactor = Redactor()
-        items = [{"id": str(UUID(row["id"])), "name": redactor.text(row["name"], "team")[:200]}
-                 for row in rows if isinstance(row["name"], str)]
-        return {"items": items, "has_more": bool(connection["pageInfo"]["hasNextPage"])}
+        items = []
+        for row in rows:
+            if not isinstance(row["name"], str):
+                raise TypeError()
+            items.append({"id": str(UUID(row["id"])), "name": redactor.text(
+                row["name"].replace(key(config), "[REDACTED]"), "team")[:200]})
+        if len({item["id"] for item in items}) != len(items):
+            raise ValueError()
+        more = connection["pageInfo"]["hasNextPage"]
+        if not isinstance(more, bool):
+            raise TypeError()
+        cursor = validate_cursor(connection["pageInfo"].get("endCursor")) if more else None
+        if more and (not cursor or cursor == after or not items):
+            raise ValueError()
+        return {"items": items, "has_more": more, "next_cursor": cursor}
     except (KeyError, TypeError, ValueError, AttributeError):
-        raise ProviderError("Linear returned unsupported team information") from None
+        raise ProviderError("Linear returned unsupported target information") from None
 
 
 def create_issue(config, payload):
